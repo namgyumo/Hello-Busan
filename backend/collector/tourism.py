@@ -19,7 +19,7 @@ CONTENT_TYPE_MAP = {
     "15": "activity",   # 축제/공연/행사
     "25": "activity",   # 여행코스
     "28": "activity",   # 레포츠
-    "38": "food",       # 쇼핑
+    "38": "shopping",   # 쇼핑
     "39": "food",       # 음식점
 }
 
@@ -29,18 +29,35 @@ class TourismCollector(BaseCollector):
 
     def __init__(self):
         super().__init__(
-            api_key=settings.TOUR_API_KEY,
+            api_key=settings.DATA_API_KEY,
             base_url="http://apis.data.go.kr/B551011/KorService1",
         )
 
     async def collect(self) -> List[Dict]:
-        """부산 관광지 목록 수집"""
+        """부산 관광지 목록 수집 (기본정보 + 상세)"""
         all_spots = []
 
         for content_type_id in CONTENT_TYPE_MAP.keys():
             spots = await self._collect_by_type(content_type_id)
-            if spots:
-                all_spots.extend(spots)
+            if not spots:
+                continue
+
+            # 각 관광지의 상세/소개 정보도 수집
+            for spot in spots:
+                cid = spot.get("external_id")
+                if not cid:
+                    continue
+
+                detail = await self.collect_detail(cid)
+                if detail:
+                    spot["description"] = detail.get("description", "")
+
+                intro = await self.collect_intro(cid, content_type_id)
+                if intro:
+                    spot["operating_hours"] = intro.get("operating_hours", "")
+                    spot["admission_fee"] = intro.get("admission_fee", "")
+
+            all_spots.extend(spots)
 
         logger.info(f"총 {len(all_spots)}개 관광지 수집 완료")
         return all_spots
@@ -69,16 +86,21 @@ class TourismCollector(BaseCollector):
 
         spots = []
         for item in items:
+            images = []
+            if item.get("firstimage"):
+                images.append(item["firstimage"])
+            if item.get("firstimage2") and item["firstimage2"] != item.get("firstimage"):
+                images.append(item["firstimage2"])
+
             spot = {
-                "content_id": item.get("contentid"),
+                "external_id": item.get("contentid"),
                 "name": item.get("title", "").strip(),
-                "category": CONTENT_TYPE_MAP.get(content_type_id, "etc"),
+                "category_id": CONTENT_TYPE_MAP.get(content_type_id, "etc"),
                 "address": item.get("addr1", ""),
                 "lat": float(item.get("mapy", 0)),
                 "lng": float(item.get("mapx", 0)),
-                "image_url": item.get("firstimage", ""),
-                "thumbnail_url": item.get("firstimage2", ""),
-                "tel": item.get("tel", ""),
+                "images": images,
+                "phone": item.get("tel", ""),
                 "content_type_id": content_type_id,
             }
             if spot["lat"] and spot["lng"]:
@@ -103,8 +125,54 @@ class TourismCollector(BaseCollector):
 
         items = body.get("items", {}).get("item", [])
         if isinstance(items, list) and items:
-            return items[0]
-        return items if isinstance(items, dict) else None
+            item = items[0]
+        elif isinstance(items, dict):
+            item = items
+        else:
+            return None
+
+        return {
+            "description": item.get("overview", ""),
+            "homepage": item.get("homepage", ""),
+        }
+
+    async def collect_intro(self, content_id: str, content_type_id: str) -> Optional[Dict]:
+        """관광지 소개 정보 수집 (운영시간, 입장료 등)"""
+        params = {
+            "contentId": content_id,
+            "contentTypeId": content_type_id,
+            "MobileOS": "ETC",
+            "MobileApp": "HelloBusan",
+            "_type": "json",
+        }
+
+        body = await self.fetch("/detailIntro1", params=params)
+        if not body:
+            return None
+
+        items = body.get("items", {}).get("item", [])
+        if isinstance(items, list) and items:
+            item = items[0]
+        elif isinstance(items, dict):
+            item = items
+        else:
+            return None
+
+        # 컨텐츠 타입별 필드명이 다름
+        return {
+            "operating_hours": (
+                item.get("usetime", "")
+                or item.get("usetimeculture", "")
+                or item.get("playtime", "")
+                or item.get("opentimefood", "")
+                or ""
+            ),
+            "admission_fee": (
+                item.get("usefee", "")
+                or item.get("usetimefestival", "")
+                or ""
+            ),
+        }
 
     async def save(self, data: List[Dict]) -> int:
         """Supabase에 관광지 데이터 저장 (upsert)"""
@@ -113,19 +181,22 @@ class TourismCollector(BaseCollector):
 
         for spot in data:
             try:
-                sb.table("spots").upsert(
+                sb.table("tourist_spots").upsert(
                     {
-                        "content_id": spot["content_id"],
+                        "external_id": spot["external_id"],
                         "name": spot["name"],
-                        "category": spot["category"],
+                        "category_id": spot["category_id"],
                         "address": spot["address"],
                         "lat": spot["lat"],
                         "lng": spot["lng"],
-                        "image_url": spot["image_url"],
-                        "thumbnail_url": spot["thumbnail_url"],
-                        "tel": spot["tel"],
+                        "images": spot["images"],
+                        "phone": spot["phone"],
+                        "description": spot.get("description", ""),
+                        "operating_hours": spot.get("operating_hours", ""),
+                        "admission_fee": spot.get("admission_fee", ""),
+                        "is_active": True,
                     },
-                    on_conflict="content_id",
+                    on_conflict="external_id",
                 ).execute()
                 saved += 1
             except Exception as e:

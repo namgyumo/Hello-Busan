@@ -1,6 +1,6 @@
 """
-데이터 모델 패키지
+Hello-Busan Pydantic 모델 패키지
 """
-from backend.models.spot import SpotResponse, SpotDetail, SpotListResponse
-from backend.models.comfort import ComfortResponse, ComfortDashboard
-from backend.models.common import PaginatedResponse, ErrorResponse
+from backend.models.common import SuccessResponse, ErrorResponse, Meta
+from backend.models.spot import SpotResponse, SpotDetail, RecommendItem, CategoryItem
+from backend.models.comfort import ComfortResponse, ComfortBulkItem, HeatmapResponse

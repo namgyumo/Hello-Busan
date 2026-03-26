@@ -1,143 +1,130 @@
 """
-쾌적도 서비스
-- 혼잡도 + 날씨 + 교통 -> 종합 쾌적도 계산
+쾌적함 지수 서비스
+- 혼잡도(50%) + 날씨(30%) + 교통(20%) -> 종합 쾌적함 점수
 """
 from typing import Dict, List, Optional
 from backend.db.supabase import get_supabase
-from backend.models.comfort import ComfortResponse, ComfortDashboard
+from backend.models.comfort import ComfortResponse
 from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
 
+COMFORT_WEIGHTS = {
+    "weather": 0.3,
+    "crowd": 0.5,
+    "transport": 0.2,
+}
+
+GRADE_MAP = [
+    (80, "쾌적"),
+    (60, "보통"),
+    (40, "혼잡"),
+    (0, "매우혼잡"),
+]
+
+
+def _get_grade(score: int) -> str:
+    for threshold, label in GRADE_MAP:
+        if score >= threshold:
+            return label
+    return "매우혼잡"
+
 
 class ComfortService:
-    """쾌적도 서비스"""
-
-    COMFORT_WEIGHTS = {
-        "crowd": 0.5,
-        "weather": 0.3,
-        "transport": 0.2,
-    }
+    """쾌적함 지수 서비스"""
 
     async def get_comfort(self, spot_id: str) -> Optional[ComfortResponse]:
-        """특정 관광지 쾌적도"""
-        sb = get_supabase()
-
-        comfort = (
-            sb.table("comfort_index")
-            .select("*")
-            .eq("spot_id", spot_id)
-            .order("measured_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-
-        if not comfort.data:
-            return None
-
-        data = comfort.data[0]
-        score = self._calc_comfort_score(data)
-
-        return ComfortResponse(
-            spot_id=spot_id,
-            score=score,
-            crowd_level=data.get("crowd_level", 0.5),
-            label=self._get_label(score),
-            measured_at=data.get("measured_at"),
-        )
-
-    async def get_bulk_comfort(
-        self, spot_ids: List[str]
-    ) -> Dict[str, Dict]:
-        """여러 관광지 혼잡도 일괄 조회"""
-        sb = get_supabase()
-        result = {}
-
-        for spot_id in spot_ids:
-            comfort = (
-                sb.table("comfort_index")
+        """특정 관광지 쾌적함 지수"""
+        try:
+            sb = get_supabase()
+            result = (
+                sb.table("comfort_scores")
                 .select("*")
                 .eq("spot_id", spot_id)
-                .order("measured_at", desc=True)
+                .order("timestamp", desc=True)
                 .limit(1)
                 .execute()
             )
-            if comfort.data:
-                result[spot_id] = comfort.data[0]
 
-        return result
+            if not result.data:
+                return None
 
-    async def get_dashboard(
-        self, category: Optional[str] = None
-    ) -> ComfortDashboard:
-        """전체 쾌적도 대시보드"""
-        sb = get_supabase()
+            data = result.data[0]
+            score = data.get("total_score", 0)
 
-        query = sb.table("spots").select("id, name, category, lat, lng")
-        if category:
-            query = query.eq("category", category)
-        spots = query.execute()
+            return ComfortResponse(
+                spot_id=str(spot_id),
+                score=score,
+                grade=_get_grade(score),
+                components={
+                    "weather": {
+                        "score": data.get("weather_score", 0),
+                        "weight": COMFORT_WEIGHTS["weather"],
+                    },
+                    "crowd": {
+                        "score": data.get("crowd_score", 0),
+                        "weight": COMFORT_WEIGHTS["crowd"],
+                    },
+                    "transport": {
+                        "score": data.get("transport_score", 0),
+                        "weight": COMFORT_WEIGHTS["transport"],
+                    },
+                },
+                updated_at=data.get("timestamp"),
+            )
 
-        items = []
-        for spot in spots.data or []:
-            comfort = await self.get_comfort(spot["id"])
-            items.append({
-                "spot_id": spot["id"],
-                "name": spot["name"],
-                "category": spot["category"],
-                "lat": spot["lat"],
-                "lng": spot["lng"],
-                "comfort": comfort.dict() if comfort else None,
-            })
+        except Exception as e:
+            logger.error(f"쾌적함 지수 조회 실패 [{spot_id}]: {e}")
+            return None
 
-        return ComfortDashboard(
-            items=items,
-            total=len(items),
-            updated_at=datetime.now().isoformat(),
-        )
+    async def get_bulk_comfort(self, spot_ids: List[str]) -> Dict[str, Dict]:
+        """여러 관광지 쾌적함 지수 일괄 조회"""
+        if not spot_ids:
+            return {}
 
-    async def get_history(
-        self, spot_id: str, hours: int = 24
-    ) -> List[Dict]:
-        """쾌적도 히스토리"""
-        sb = get_supabase()
-        since = (datetime.now() - timedelta(hours=hours)).isoformat()
+        try:
+            sb = get_supabase()
+            result = {}
 
-        result = (
-            sb.table("comfort_index")
-            .select("*")
-            .eq("spot_id", spot_id)
-            .gte("measured_at", since)
-            .order("measured_at")
-            .execute()
-        )
+            # 각 관광지의 최신 쾌적함 지수 조회
+            for spot_id in spot_ids:
+                comfort = (
+                    sb.table("comfort_scores")
+                    .select("*")
+                    .eq("spot_id", spot_id)
+                    .order("timestamp", desc=True)
+                    .limit(1)
+                    .execute()
+                )
+                if comfort.data:
+                    data = comfort.data[0]
+                    score = data.get("total_score", 0)
+                    result[str(spot_id)] = {
+                        "total_score": score,
+                        "grade": _get_grade(score),
+                        "weather_score": data.get("weather_score"),
+                        "crowd_score": data.get("crowd_score"),
+                        "transport_score": data.get("transport_score"),
+                        "crowd_level": data.get("grade", "보통"),
+                    }
 
-        return result.data or []
+            return result
 
-    def _calc_comfort_score(self, data: Dict) -> float:
-        """종합 쾌적도 점수 (0~100)"""
-        crowd = 1 - data.get("crowd_level", 0.5)
-        weather = data.get("weather_score", 0.7)
-        transport = data.get("transport_score", 0.5)
-
-        score = (
-            self.COMFORT_WEIGHTS["crowd"] * crowd
-            + self.COMFORT_WEIGHTS["weather"] * weather
-            + self.COMFORT_WEIGHTS["transport"] * transport
-        )
-        return round(score * 100, 1)
+        except Exception as e:
+            logger.error(f"일괄 쾌적함 조회 실패: {e}")
+            return {}
 
     @staticmethod
-    def _get_label(score: float) -> str:
-        """쾌적도 라벨"""
-        if score >= 80:
-            return "매우 쾌적"
-        elif score >= 60:
-            return "쾌적"
-        elif score >= 40:
-            return "보통"
-        elif score >= 20:
-            return "혼잡"
-        else:
-            return "매우 혼잡"
+    def calc_comfort_score(
+        weather_score: int = 50,
+        crowd_score: int = 50,
+        transport_score: int = 50,
+    ) -> int:
+        """쾌적함 지수 계산 (0~100)"""
+        score = (
+            COMFORT_WEIGHTS["weather"] * weather_score
+            + COMFORT_WEIGHTS["crowd"] * crowd_score
+            + COMFORT_WEIGHTS["transport"] * transport_score
+        )
+        return round(score)

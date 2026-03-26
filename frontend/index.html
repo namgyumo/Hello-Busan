@@ -4,63 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hello, Busan! — 부산 관광지 스마트 추천</title>
-    <!-- Leaflet.js -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- 프로젝트 스타일 -->
-    <link rel="stylesheet" href="./css/reset.css">
-    <link rel="stylesheet" href="./css/common.css">
+    <meta name="description" content="실시간 혼잡도와 AI 추천으로 쾌적한 부산 여행을 즐기세요">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/stitch.css">
 </head>
 <body>
+    <!-- Header -->
     <header class="header">
-        <h1 class="header__title">🌊 Hello, Busan!</h1>
-        <nav class="header__nav">
-            <ul class="nav__list">
-                <li><a href="#map" class="nav__link">지도</a></li>
-                <li><a href="#comfort" class="nav__link">쾌적함 지수</a></li>
-                <li><a href="#spots" class="nav__link">관광지</a></li>
-            </ul>
-            <select id="lang-select" class="lang-select">
+        <a href="/" class="header__logo">Hello, Busan!</a>
+        <div class="header__actions">
+            <select id="lang-select" class="lang-select" aria-label="언어 선택">
                 <option value="ko">한국어</option>
                 <option value="en">English</option>
                 <option value="ja">日本語</option>
                 <option value="zh">中文</option>
-                <option value="zh-tw">繁體中文</option>
+                <option value="ru">Русский</option>
             </select>
-        </nav>
+            <button id="btn-location" class="btn-icon" aria-label="현재 위치">📍</button>
+        </div>
     </header>
-    <main class="main">
-        <section class="hero">
-            <h2 class="hero__title">덜 붐비면서 나한테 맞는 관광지를 찾아보세요</h2>
-            <p class="hero__subtitle">실시간 혼잡도 + AI 추천으로 쾌적한 부산 여행</p>
-        </section>
-        <section id="map" class="map-section">
-            <h3 class="section__title">📍 실시간 혼잡도 히트맵</h3>
-            <div id="heatmap" class="heatmap-container"></div>
-        </section>
-        <section id="comfort" class="comfort-section">
-            <h3 class="section__title">📊 쾌적함 지수 대시보드</h3>
-            <div id="comfort-dashboard" class="comfort-dashboard"></div>
-        </section>
-        <section class="category-section">
-            <h3 class="section__title">🏷️ 카테고리별 추천</h3>
-            <div class="category-filters">
-                <button class="category-btn active" data-category="all">전체</button>
-                <button class="category-btn" data-category="nature">🏞️ 자연</button>
-                <button class="category-btn" data-category="culture">🏛️ 문화</button>
-                <button class="category-btn" data-category="food">🍜 음식</button>
-                <button class="category-btn" data-category="activity">🎯 체험</button>
+
+    <!-- Category Filter -->
+    <nav class="category-bar" id="category-bar" aria-label="카테고리 필터">
+        <button class="category-chip active" data-category="">전체</button>
+        <button class="category-chip" data-category="nature">🏔 자연/경관</button>
+        <button class="category-chip" data-category="culture">🏛 문화/역사</button>
+        <button class="category-chip" data-category="food">🍜 맛집/카페</button>
+        <button class="category-chip" data-category="activity">🏄 액티비티</button>
+        <button class="category-chip" data-category="shopping">🛍 쇼핑</button>
+        <button class="category-chip" data-category="nightview">🌙 야경</button>
+    </nav>
+
+    <!-- Fallback Banner -->
+    <div id="fallback-banner" class="fallback-banner">데이터가 최신이 아닐 수 있습니다</div>
+
+    <!-- Main Content -->
+    <main class="main-layout">
+        <div class="map-container">
+            <div id="map"></div>
+            <button id="btn-heatmap-toggle" class="map-toggle">히트맵 ON</button>
+        </div>
+
+        <div class="spot-list-container">
+            <div class="spot-list-header">
+                <h2 class="spot-list-title" data-i18n="nav_recommend">추천 관광지</h2>
+                <p class="spot-list-desc" data-i18n="recommend_desc">선호하는 테마를 바탕으로 추천합니다</p>
             </div>
-        </section>
-        <section id="spots" class="spot-section">
-            <h3 class="section__title">🏖️ 추천 관광지</h3>
-            <div id="spot-list" class="spot-list"></div>
-        </section>
+            <div id="spot-list" class="spot-list">
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+            </div>
+            <button id="btn-more" class="btn-more" style="display:none" data-i18n="load_more">더 보기</button>
+            <div id="sse-status" class="sse-status" data-i18n="sse_connected">실시간 쾌적함 지수(SSE) 연동 중</div>
+        </div>
     </main>
-    <footer class="footer">
-        <p>&copy; 2026 Hello, Busan! All rights reserved.</p>
-    </footer>
+
+    <div id="toast" class="toast"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <script src="./js/app.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/map.js"></script>
+    <script src="/js/category.js"></script>
+    <script src="/js/recommend.js"></script>
+    <script src="/js/sse.js"></script>
+    <script src="/js/app.js"></script>
 </body>
 </html>

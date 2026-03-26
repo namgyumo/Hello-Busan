@@ -28,7 +28,6 @@ class CacheManager:
 
     _instance: Optional["CacheManager"] = None
     _store: dict = {}
-    _lock = asyncio.Lock()
 
     def __new__(cls):
         if cls._instance is None:

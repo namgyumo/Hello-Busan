@@ -1,61 +1,74 @@
 """
-SSE 이벤트 스트리밍 API 라우터
-- 실시간 쾌적도 업데이트
-- 히트맵 데이터 스트리밍
+SSE 이벤트 + 히트맵 API 라우터 — API 설계서 API-007, API-008
 """
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+from backend.models.common import SuccessResponse, Meta
+from backend.models.comfort import HeatmapConfig
 from backend.services.comfort import ComfortService
+from backend.cache.manager import CacheManager
 from backend.db.supabase import get_supabase
 import asyncio
 import json
 import logging
 
-router = APIRouter(prefix="/api/v1/events", tags=["events"])
+router = APIRouter(prefix="/api/v1", tags=["events"])
 logger = logging.getLogger(__name__)
 comfort_service = ComfortService()
+cache = CacheManager()
 
 # SSE 연결 관리
 active_connections: list = []
 
 
-async def event_generator(request: Request):
-    """SSE 이벤트 생성기"""
-    queue = asyncio.Queue()
-    active_connections.append(queue)
+@router.get("/heatmap")
+async def get_heatmap():
+    """[API-007] 히트맵 데이터 조회"""
+    cache_key = "heatmap:all"
+    cached = await cache.get(cache_key)
+    if cached:
+        return cached
 
     try:
-        # 초기 데이터 전송
-        initial_data = await comfort_service.get_dashboard()
-        yield f"event: comfort_update\ndata: {json.dumps(initial_data.dict(), ensure_ascii=False)}\n\n"
+        sb = get_supabase()
+        spots = sb.table("tourist_spots").select("id, lat, lng").eq("is_active", True).execute()
 
-        # 히트맵 초기 데이터
-        heatmap_data = await _get_heatmap_data()
-        yield f"event: heatmap_update\ndata: {json.dumps(heatmap_data, ensure_ascii=False)}\n\n"
+        spot_ids = [str(s["id"]) for s in (spots.data or [])]
+        comfort_data = await comfort_service.get_bulk_comfort(spot_ids)
 
-        while True:
-            if await request.is_disconnected():
-                break
+        points = []
+        for s in (spots.data or []):
+            sid = str(s["id"])
+            c = comfort_data.get(sid, {})
+            crowd_score = c.get("crowd_score", 50)
+            # intensity: 0(쾌적) ~ 1(매우혼잡)
+            intensity = round(1 - (crowd_score / 100), 2) if crowd_score else 0.5
+            points.append([s["lat"], s["lng"], intensity])
 
-            try:
-                data = await asyncio.wait_for(queue.get(), timeout=30.0)
-                yield f"event: {data['event']}\ndata: {json.dumps(data['data'], ensure_ascii=False)}\n\n"
-            except asyncio.TimeoutError:
-                # 30초마다 keep-alive
-                yield f": keep-alive\n\n"
+        response = SuccessResponse(
+            data={
+                "points": points,
+                "config": HeatmapConfig().model_dump(),
+            },
+            meta=Meta(total=len(points)),
+        )
 
-    except asyncio.CancelledError:
-        pass
-    finally:
-        active_connections.remove(queue)
-        logger.info(f"SSE 연결 종료. 활성 연결: {len(active_connections)}")
+        await cache.set(cache_key, response.model_dump(), ttl=60)
+        return response
+
+    except Exception as e:
+        logger.error(f"히트맵 데이터 조회 실패: {e}")
+        return SuccessResponse(
+            data={"points": [], "config": HeatmapConfig().model_dump()},
+            meta=Meta(fallback_used=True),
+        )
 
 
-@router.get("/stream")
+@router.get("/events")
 async def stream_events(request: Request):
-    """SSE 스트림 엔드포인트"""
+    """[API-008] SSE 실시간 갱신 스트림"""
     return StreamingResponse(
-        event_generator(request),
+        _event_generator(request),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -65,41 +78,37 @@ async def stream_events(request: Request):
     )
 
 
-async def broadcast_event(event_type: str, data: dict):
-    """모든 연결에 이벤트 브로드캐스트"""
+async def _event_generator(request: Request):
+    """SSE 이벤트 생성기"""
+    queue = asyncio.Queue()
+    active_connections.append(queue)
+
+    try:
+        # 하트비트 먼저
+        yield f"event: heartbeat\ndata: {{}}\n\n"
+
+        while True:
+            if await request.is_disconnected():
+                break
+
+            try:
+                data = await asyncio.wait_for(queue.get(), timeout=30.0)
+                yield f"event: {data['event']}\ndata: {json.dumps(data['data'], ensure_ascii=False)}\n\n"
+            except asyncio.TimeoutError:
+                yield f"event: heartbeat\ndata: {{}}\n\n"
+
+    except asyncio.CancelledError:
+        pass
+    finally:
+        if queue in active_connections:
+            active_connections.remove(queue)
+        logger.debug(f"SSE 연결 종료. 활성: {len(active_connections)}")
+
+
+async def broadcast_update(event_type: str, data: dict):
+    """모든 SSE 연결에 이벤트 브로드캐스트"""
     for queue in active_connections:
-        await queue.put({"event": event_type, "data": data})
-
-
-async def _get_heatmap_data() -> list:
-    """히트맵용 혼잡도 데이터"""
-    sb = get_supabase()
-    result = (
-        sb.table("spots")
-        .select("id, name, lat, lng")
-        .execute()
-    )
-
-    comfort_data = await comfort_service.get_bulk_comfort(
-        [s["id"] for s in result.data]
-    )
-
-    heatmap = []
-    for spot in result.data:
-        comfort = comfort_data.get(spot["id"], {})
-        heatmap.append({
-            "lat": spot["lat"],
-            "lng": spot["lng"],
-            "intensity": comfort.get("crowd_level", 0.5),
-            "name": spot["name"],
-        })
-    return heatmap
-
-
-@router.get("/status")
-async def get_sse_status():
-    """SSE 연결 상태"""
-    return {
-        "active_connections": len(active_connections),
-        "status": "healthy",
-    }
+        try:
+            await queue.put({"event": event_type, "data": data})
+        except Exception:
+            pass

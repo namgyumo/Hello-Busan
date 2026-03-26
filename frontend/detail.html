@@ -4,34 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관광지 상세 — Hello, Busan!</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/stitch.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/stitch.css">
 </head>
 <body>
+    <!-- Header -->
     <header class="header">
-        <a href="./index.html" class="header__logo">🌊 Hello, Busan!</a>
-        <select id="lang-select" class="lang-select">
-            <option value="ko">한국어</option>
-            <option value="en">English</option>
-            <option value="ja">日本語</option>
-            <option value="zh">中文</option>
-            <option value="ru">Русский</option>
-        </select>
+        <div class="detail-header">
+            <button class="btn-back" onclick="history.back()" aria-label="뒤로가기">←</button>
+            <a href="/" class="header__logo">Hello, Busan!</a>
+        </div>
+        <div class="header__actions">
+            <select id="lang-select" class="lang-select" aria-label="언어 선택">
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
     </header>
 
-    <main class="detail">
-        <section class="detail__hero" id="detail-hero">
-            <!-- 관광지 이미지 / 이름 -->
+    <main>
+        <!-- Gallery -->
+        <div class="detail-gallery" id="detail-gallery">
+            <div class="gallery-placeholder">🌊</div>
+        </div>
+
+        <!-- Comfort Dashboard -->
+        <div class="comfort-dashboard" id="comfort-dashboard">
+            <div class="comfort-score-big">
+                <div class="comfort-score-big__number" id="comfort-score">--</div>
+                <div class="comfort-score-big__grade" id="comfort-grade">로딩 중...</div>
+            </div>
+            <div class="comfort-components">
+                <div class="comfort-component">
+                    <div class="comfort-component__score" id="weather-score">--</div>
+                    <div class="comfort-component__label">날씨</div>
+                </div>
+                <div class="comfort-component">
+                    <div class="comfort-component__score" id="crowd-score">--</div>
+                    <div class="comfort-component__label">혼잡도</div>
+                </div>
+                <div class="comfort-component">
+                    <div class="comfort-component__score" id="transport-score">--</div>
+                    <div class="comfort-component__label">교통</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basic Info -->
+        <section class="detail-section" id="detail-info">
+            <h3 class="detail-section__title">기본 정보</h3>
+            <ul class="info-list" id="info-list">
+                <li><span class="icon">📍</span><span id="info-address">-</span></li>
+                <li><span class="icon">🕐</span><span id="info-hours">-</span></li>
+                <li><span class="icon">💰</span><span id="info-fee">-</span></li>
+                <li><span class="icon">📞</span><span id="info-phone">-</span></li>
+            </ul>
         </section>
 
-        <section class="detail__info" id="detail-info">
-            <!-- 쾌적함 지수 + 실시간 혼잡도 + 날씨 + 교통 -->
+        <!-- Description -->
+        <section class="detail-section" id="detail-desc-section" style="display:none">
+            <h3 class="detail-section__title">소개</h3>
+            <p id="detail-description" style="font-size:0.9rem;line-height:1.7;color:var(--color-secondary)"></p>
         </section>
 
-        <section class="detail__map">
-            <h3>📍 위치</h3>
-            <div id="detail-map" class="detail-map-container"></div>
+        <!-- Map -->
+        <section class="detail-section">
+            <h3 class="detail-section__title">위치</h3>
+            <div id="detail-map" style="width:100%;height:200px;border-radius:var(--radius-md);overflow:hidden"></div>
+        </section>
+
+        <!-- Nearby -->
+        <section class="detail-section" id="nearby-section" style="display:none">
+            <h3 class="detail-section__title">주변 추천 관광지</h3>
+            <div class="nearby-list" id="nearby-list"></div>
         </section>
     </main>
 
@@ -40,6 +90,7 @@
     </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="./js/detail.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/detail.js"></script>
 </body>
 </html>

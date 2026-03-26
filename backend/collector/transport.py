@@ -38,7 +38,7 @@ class TransportCollector(BaseCollector):
     async def _get_spot_list(self) -> List[Dict]:
         """관광지 목록 조회"""
         sb = get_supabase()
-        result = sb.table("spots").select("id, name, lat, lng").execute()
+        result = sb.table("tourist_spots").select("id, name, lat, lng").execute()
         return result.data or []
 
     async def _collect_nearby_transport(
@@ -56,37 +56,43 @@ class TransportCollector(BaseCollector):
             params=params,
         )
 
-        nearby_stations = []
+        stations = []
+        nearest_station = None
         if body:
             items = body.get("items", {}).get("item", [])
             if not isinstance(items, list):
                 items = [items] if items else []
 
             for item in items:
-                nearby_stations.append({
-                    "station_name": item.get("nodenm", ""),
-                    "station_id": item.get("nodeid", ""),
+                stations.append({
+                    "name": item.get("nodenm", ""),
+                    "id": item.get("nodeid", ""),
                     "distance": item.get("dist", 0),
                 })
 
+            if stations:
+                nearest_station = stations[0].get("name", "")
+
+        transit_score = self._calc_accessibility(stations)
+
         return {
             "spot_id": spot["id"],
-            "nearby_stations": nearby_stations,
-            "station_count": len(nearby_stations),
-            "accessibility_score": self._calc_accessibility(nearby_stations),
-            "collected_at": datetime.now().isoformat(),
+            "nearest_station": nearest_station,
+            "bus_routes": [s.get("name", "") for s in stations],
+            "transit_score": transit_score,
+            "timestamp": datetime.now().isoformat(),
         }
 
-    def _calc_accessibility(self, stations: List[Dict]) -> float:
+    def _calc_accessibility(self, stations: List[Dict]) -> int:
         """
-        접근성 점수 계산 (0.0 ~ 1.0)
+        접근성 점수 계산 (0~100)
         - 가까운 정류장이 많을수록 높음
         """
         if not stations:
-            return 0.0
+            return 0
 
         count_score = min(len(stations) / 5, 1.0)
-        return round(count_score, 2)
+        return int(count_score * 100)
 
     async def save(self, data: List[Dict]) -> int:
         """교통 데이터 저장"""
@@ -95,15 +101,14 @@ class TransportCollector(BaseCollector):
 
         for item in data:
             try:
-                sb.table("transport_info").upsert(
+                sb.table("transport_data").insert(
                     {
                         "spot_id": item["spot_id"],
-                        "nearby_stations": item["nearby_stations"],
-                        "station_count": item["station_count"],
-                        "accessibility_score": item["accessibility_score"],
-                        "collected_at": item["collected_at"],
+                        "nearest_station": item["nearest_station"],
+                        "bus_routes": item["bus_routes"],
+                        "transit_score": item["transit_score"],
+                        "timestamp": item["timestamp"],
                     },
-                    on_conflict="spot_id",
                 ).execute()
                 saved += 1
             except Exception as e:

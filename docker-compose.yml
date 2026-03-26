@@ -14,11 +14,24 @@ services:
       - APP_ENV=production
       - PYTHONUNBUFFERED=1
     volumes:
+      - ./ml_data:/app/ml_data
       - ./frontend:/app/frontend
+      - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1800M
+        reservations:
+          memory: 800M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

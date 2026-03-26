@@ -1,27 +1,42 @@
 """
-공통 Pydantic 모델
+공통 Pydantic 모델 — API 설계서 공통 응답 형식
 """
 from pydantic import BaseModel
-from typing import Optional, List, Any
+from typing import Optional, Any
+from datetime import datetime
 
 
-class PaginatedResponse(BaseModel):
-    """페이지네이션 응답"""
-    items: List[Any]
-    total: int
-    page: int = 1
-    size: int = 20
-    has_next: bool = False
+class Meta(BaseModel):
+    """공통 메타 정보"""
+    total: Optional[int] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None
+    timestamp: str = ""
+    fallback_used: bool = False
+
+    def __init__(self, **data):
+        if not data.get("timestamp"):
+            data["timestamp"] = datetime.utcnow().isoformat() + "Z"
+        super().__init__(**data)
+
+
+class SuccessResponse(BaseModel):
+    """성공 응답 (단일/목록)"""
+    success: bool = True
+    data: Any = None
+    meta: Meta = Meta()
+
+
+class ErrorDetail(BaseModel):
+    """에러 상세"""
+    code: str
+    message: str
+    detail: Optional[str] = None
+    fallback_used: bool = False
+    fallback_type: Optional[str] = None
 
 
 class ErrorResponse(BaseModel):
     """에러 응답"""
-    detail: str
-    status_code: int = 500
-
-
-class HealthResponse(BaseModel):
-    """헬스체크 응답"""
-    status: str = "healthy"
-    version: str = "1.0.0"
-    services: Optional[dict] = None
+    success: bool = False
+    error: ErrorDetail

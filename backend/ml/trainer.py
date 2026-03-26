@@ -42,8 +42,8 @@ class ModelTrainer:
         """학습 데이터 준비"""
         sb = get_supabase()
 
-        spots = sb.table("spots").select("*").execute()
-        comfort = sb.table("comfort_index").select("*").execute()
+        spots = sb.table("tourist_spots").select("*").execute()
+        comfort = sb.table("comfort_scores").select("*").execute()
 
         if not spots.data:
             logger.warning("학습 데이터 없음")
@@ -53,10 +53,10 @@ class ModelTrainer:
 
         comfort_df = pd.DataFrame(comfort.data) if comfort.data else pd.DataFrame()
         if not comfort_df.empty:
-            avg_comfort = comfort_df.groupby("spot_id")["crowd_level"].mean()
-            df["avg_crowd_level"] = df["id"].map(avg_comfort).fillna(0.5)
+            avg_comfort = comfort_df.groupby("spot_id")["total_score"].mean()
+            df["avg_comfort_score"] = df["id"].map(avg_comfort).fillna(50)
         else:
-            df["avg_crowd_level"] = 0.5
+            df["avg_comfort_score"] = 50
 
         return df
 

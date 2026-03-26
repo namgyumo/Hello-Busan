@@ -74,16 +74,25 @@ class WeatherCollector(BaseCollector):
 
         result = []
         for key, data in grouped.items():
+            pty = data.get("PTY", "0")
+            rain_type_map = {"0": "없음", "1": "비", "2": "비+눈", "3": "눈", "4": "소나기"}
+            pcp = data.get("PCP", "0")
+            rain_amount = 0.0
+            if pcp and pcp not in ("강수없음", "0"):
+                try:
+                    rain_amount = float(pcp.replace("mm", "").strip())
+                except ValueError:
+                    rain_amount = 0.0
+
             weather = {
-                "forecast_date": data.get("forecast_date"),
-                "forecast_time": data.get("forecast_time"),
+                "region_code": "haeundae",
                 "temperature": float(data.get("TMP", 0)),
-                "humidity": float(data.get("REH", 0)),
-                "precipitation": data.get("PTY", "0"),
-                "precipitation_amount": data.get("PCP", "0"),
+                "sky_code": data.get("SKY", "1"),
+                "rain_type": rain_type_map.get(pty, "없음"),
+                "rain_amount": rain_amount,
+                "humidity": int(float(data.get("REH", 0))),
                 "wind_speed": float(data.get("WSD", 0)),
-                "sky_condition": data.get("SKY", "1"),
-                "collected_at": datetime.now().isoformat(),
+                "timestamp": datetime.now().isoformat(),
             }
             result.append(weather)
 
@@ -96,10 +105,7 @@ class WeatherCollector(BaseCollector):
 
         for item in data:
             try:
-                sb.table("weather").upsert(
-                    item,
-                    on_conflict="forecast_date,forecast_time",
-                ).execute()
+                sb.table("weather_data").insert(item).execute()
                 saved += 1
             except Exception as e:
                 logger.error(f"날씨 저장 실패: {e}")
