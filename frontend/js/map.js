@@ -76,7 +76,8 @@ const MapModule = (() => {
 
     function _comfortBadgeHtml(score, grade) {
         if (!score && score !== 0) return '';
-        const cls = grade === '쾌적' ? 'good' : grade === '보통' ? 'normal' : 'crowded';
+        const clsMap = { '쾌적': 'good', '보통': 'normal', '혼잡': 'crowded', '매우혼잡': 'very-crowded' };
+        const cls = clsMap[grade] || 'normal';
         return `<span class="comfort-badge comfort-badge--${cls}">${grade} ${score}점</span>`;
     }
 

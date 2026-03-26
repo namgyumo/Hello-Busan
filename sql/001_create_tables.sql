@@ -125,7 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_transport_spot_ts ON transport_data(spot_id, time
 -- 7. comfort_scores (쾌적함 지수)
 CREATE TABLE IF NOT EXISTS comfort_scores (
     id               BIGSERIAL     PRIMARY KEY,
-    spot_id          INTEGER       NOT NULL REFERENCES tourist_spots(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    spot_id          INTEGER       NOT NULL UNIQUE REFERENCES tourist_spots(id) ON DELETE CASCADE ON UPDATE CASCADE,
     timestamp        TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     total_score      INTEGER       NOT NULL,
     grade            VARCHAR(20)   NOT NULL,

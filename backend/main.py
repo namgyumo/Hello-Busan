@@ -53,6 +53,19 @@ async def lifespan(app: FastAPI):
             scheduler = CollectorScheduler()
             scheduler.start()
             logger.info("데이터 수집 스케줄러 시작")
+
+            # 첫 실행: 백그라운드에서 데이터 수집 (서버 시작 차단 방지)
+            import asyncio
+
+            async def _initial_collect():
+                try:
+                    logger.info("초기 데이터 수집 시작...")
+                    results = await scheduler.run_all_now()
+                    logger.info(f"초기 데이터 수집 완료: {results}")
+                except Exception as e:
+                    logger.error(f"초기 데이터 수집 실패: {e}")
+
+            asyncio.create_task(_initial_collect())
         except Exception as e:
             logger.error(f"스케줄러 시작 실패: {e}")
 

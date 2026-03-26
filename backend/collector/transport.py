@@ -59,9 +59,10 @@ class TransportCollector(BaseCollector):
         stations = []
         nearest_station = None
         if body:
-            items = body.get("items", {}).get("item", [])
+            items_wrapper = body.get("items", {})
+            items = items_wrapper.get("item", []) if isinstance(items_wrapper, dict) else []
             if not isinstance(items, list):
-                items = [items] if items else []
+                items = [items] if isinstance(items, dict) else []
 
             for item in items:
                 stations.append({

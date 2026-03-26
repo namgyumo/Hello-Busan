@@ -82,7 +82,7 @@ const Recommend = (() => {
 
     function _gradeText(score) {
         if (score == null) return '';
-        if (score >= 80) return '여유';
+        if (score >= 80) return '쾌적';
         if (score >= 60) return '보통';
         if (score >= 40) return '혼잡';
         return '매우혼잡';

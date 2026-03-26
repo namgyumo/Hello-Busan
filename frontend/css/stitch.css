@@ -47,7 +47,7 @@
   font-size: 0.75rem;
   font-weight: 500;
   background: #e8f4f8;
-  color: #0077b6;
+  color: var(--color-primary, #0066CC);
 }
 
 .stitch-card__address {
@@ -103,13 +103,13 @@
 }
 
 .stitch-chip:hover {
-  border-color: #0077b6;
-  color: #0077b6;
+  border-color: var(--color-primary, #0066CC);
+  color: var(--color-primary, #0066CC);
 }
 
 .stitch-chip--active {
-  background: #0077b6;
-  border-color: #0077b6;
+  background: var(--color-primary, #0066CC);
+  border-color: var(--color-primary, #0066CC);
   color: #fff;
 }
 
@@ -149,5 +149,5 @@
 }
 
 .stitch-lang-select:focus {
-  border-color: #0077b6;
+  border-color: var(--color-primary, #0066CC);
 }

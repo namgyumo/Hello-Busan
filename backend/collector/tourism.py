@@ -30,7 +30,7 @@ class TourismCollector(BaseCollector):
     def __init__(self):
         super().__init__(
             api_key=settings.DATA_API_KEY,
-            base_url="http://apis.data.go.kr/B551011/KorService1",
+            base_url="http://apis.data.go.kr/B551011/KorService2",
         )
 
     async def collect(self) -> List[Dict]:
@@ -38,26 +38,32 @@ class TourismCollector(BaseCollector):
         all_spots = []
 
         for content_type_id in CONTENT_TYPE_MAP.keys():
-            spots = await self._collect_by_type(content_type_id)
-            if not spots:
-                continue
-
-            # 각 관광지의 상세/소개 정보도 수집
-            for spot in spots:
-                cid = spot.get("external_id")
-                if not cid:
+            try:
+                spots = await self._collect_by_type(content_type_id)
+                if not spots:
                     continue
 
-                detail = await self.collect_detail(cid)
-                if detail:
-                    spot["description"] = detail.get("description", "")
+                # 각 관광지의 상세/소개 정보도 수집
+                for spot in spots:
+                    cid = spot.get("external_id")
+                    if not cid:
+                        continue
 
-                intro = await self.collect_intro(cid, content_type_id)
-                if intro:
-                    spot["operating_hours"] = intro.get("operating_hours", "")
-                    spot["admission_fee"] = intro.get("admission_fee", "")
+                    try:
+                        detail = await self.collect_detail(cid)
+                        if detail:
+                            spot["description"] = detail.get("description", "")
 
-            all_spots.extend(spots)
+                        intro = await self.collect_intro(cid, content_type_id)
+                        if intro:
+                            spot["operating_hours"] = intro.get("operating_hours", "")
+                            spot["admission_fee"] = intro.get("admission_fee", "")
+                    except Exception as e:
+                        logger.warning(f"상세 수집 실패 [{cid}]: {e}")
+
+                all_spots.extend(spots)
+            except Exception as e:
+                logger.warning(f"타입 {content_type_id} 수집 실패: {e}")
 
         logger.info(f"총 {len(all_spots)}개 관광지 수집 완료")
         return all_spots
@@ -67,7 +73,7 @@ class TourismCollector(BaseCollector):
     ) -> Optional[List[Dict]]:
         """콘텐츠 타입별 수집"""
         params = {
-            "numOfRows": "100",
+            "numOfRows": "20",
             "pageNo": "1",
             "MobileOS": "ETC",
             "MobileApp": "HelloBusan",
@@ -76,13 +82,16 @@ class TourismCollector(BaseCollector):
             "_type": "json",
         }
 
-        body = await self.fetch("/areaBasedList1", params=params)
+        body = await self.fetch("/areaBasedList2", params=params)
         if not body:
             return None
 
-        items = body.get("items", {}).get("item", [])
+        items_wrapper = body.get("items", {})
+        if not isinstance(items_wrapper, dict):
+            return None
+        items = items_wrapper.get("item", [])
         if not isinstance(items, list):
-            items = [items]
+            items = [items] if isinstance(items, dict) else []
 
         spots = []
         for item in items:
@@ -114,16 +123,17 @@ class TourismCollector(BaseCollector):
             "contentId": content_id,
             "MobileOS": "ETC",
             "MobileApp": "HelloBusan",
-            "defaultYN": "Y",
-            "overviewYN": "Y",
             "_type": "json",
         }
 
-        body = await self.fetch("/detailCommon1", params=params)
+        body = await self.fetch("/detailCommon2", params=params)
         if not body:
             return None
 
-        items = body.get("items", {}).get("item", [])
+        items_wrapper = body.get("items", {})
+        if not isinstance(items_wrapper, dict):
+            return None
+        items = items_wrapper.get("item", [])
         if isinstance(items, list) and items:
             item = items[0]
         elif isinstance(items, dict):
@@ -146,11 +156,14 @@ class TourismCollector(BaseCollector):
             "_type": "json",
         }
 
-        body = await self.fetch("/detailIntro1", params=params)
+        body = await self.fetch("/detailIntro2", params=params)
         if not body:
             return None
 
-        items = body.get("items", {}).get("item", [])
+        items_wrapper = body.get("items", {})
+        if not isinstance(items_wrapper, dict):
+            return None
+        items = items_wrapper.get("item", [])
         if isinstance(items, list) and items:
             item = items[0]
         elif isinstance(items, dict):

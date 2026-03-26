@@ -112,9 +112,7 @@
             const res = await fetch(`${API_BASE}/heatmap?lang=${I18n.getLang()}`);
             const json = await res.json();
             if (json.success && json.data && json.data.points) {
-                MapModule.updateHeatmap(
-                    json.data.points.map(p => [p.lat, p.lng, p.intensity])
-                );
+                MapModule.updateHeatmap(json.data.points);
             }
         } catch (e) {
             console.warn('히트맵 로드 실패:', e);
@@ -158,6 +156,6 @@
 
     function showFallback() {
         const banner = document.getElementById('fallback-banner');
-        if (banner) banner.style.display = '';
+        if (banner) banner.classList.add('visible');
     }
 })();

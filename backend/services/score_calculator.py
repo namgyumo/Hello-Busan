@@ -119,7 +119,7 @@ class ScoreCalculator:
             result = (
                 sb.table("weather_data")
                 .select("*")
-                .order("collected_at", desc=True)
+                .order("timestamp", desc=True)
                 .limit(1)
                 .execute()
             )
@@ -163,8 +163,8 @@ class ScoreCalculator:
 
         temp = float(weather.get("temperature", 20))
         humidity = float(weather.get("humidity", 50))
-        precipitation = str(weather.get("precipitation", "0"))
-        sky = str(weather.get("sky_condition", "1"))
+        rain_type = str(weather.get("rain_type", "없음"))
+        sky = str(weather.get("sky_code", "1"))
 
         # 기온 점수 (18~25 최적, 100점)
         if 18 <= temp <= 25:
@@ -188,7 +188,7 @@ class ScoreCalculator:
 
         # 강수 점수
         rain_score = 100
-        if precipitation != "0":
+        if rain_type not in ("없음", "0"):
             rain_score = 20  # 비/눈 시 큰 감점
 
         # 하늘 점수

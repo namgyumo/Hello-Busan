@@ -165,15 +165,18 @@ class CrowdCollector(BaseCollector):
                 "_type": "json",
             }
             body = await self.fetch(
-                "/B551011/KorService1/areaBasedList1",
+                "/B551011/KorService2/areaBasedList2",
                 params=params,
             )
             if not body:
                 return None
 
-            items = body.get("items", {}).get("item", [])
+            items_wrapper = body.get("items", {})
+            if not isinstance(items_wrapper, dict):
+                return None
+            items = items_wrapper.get("item", [])
             if not isinstance(items, list):
-                items = [items] if items else []
+                items = [items] if isinstance(items, dict) else []
 
             return items
         except Exception as e:
