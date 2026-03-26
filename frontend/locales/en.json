@@ -1,0 +1,21 @@
+{
+  "app_title": "Hello Busan",
+  "app_subtitle": "Smart Tourist Spot Recommendation",
+  "nav_home": "Home",
+  "nav_map": "Map",
+  "nav_recommend": "Recommend",
+  "category_all": "All",
+  "category_nature": "Nature",
+  "category_culture": "Culture",
+  "category_food": "Food",
+  "category_activity": "Activity",
+  "category_nightlife": "Nightlife",
+  "comfort_good": "Comfortable",
+  "comfort_normal": "Normal",
+  "comfort_crowded": "Crowded",
+  "search_placeholder": "Search tourist spots...",
+  "detail_overview": "Overview",
+  "detail_location": "Location",
+  "detail_comfort": "Comfort Index",
+  "loading": "Loading..."
+}
