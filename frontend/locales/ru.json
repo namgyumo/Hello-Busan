@@ -1,0 +1,21 @@
+{
+  "app_title": "Hello Busan",
+  "app_subtitle": "Умные рекомендации достопримечательностей",
+  "nav_home": "Главная",
+  "nav_map": "Карта",
+  "nav_recommend": "Рекомендации",
+  "category_all": "Все",
+  "category_nature": "Природа",
+  "category_culture": "Культура",
+  "category_food": "Еда",
+  "category_activity": "Активности",
+  "category_nightlife": "Ночная жизнь",
+  "comfort_good": "Комфортно",
+  "comfort_normal": "Нормально",
+  "comfort_crowded": "Людно",
+  "search_placeholder": "Поиск достопримечательностей...",
+  "detail_overview": "Обзор",
+  "detail_location": "Расположение",
+  "detail_comfort": "Индекс комфорта",
+  "loading": "Загрузка..."
+}
