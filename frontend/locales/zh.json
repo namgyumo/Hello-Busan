@@ -1,0 +1,21 @@
+{
+  "app_title": "Hello Busan",
+  "app_subtitle": "智能旅游景点推荐",
+  "nav_home": "首页",
+  "nav_map": "地图",
+  "nav_recommend": "推荐",
+  "category_all": "全部",
+  "category_nature": "自然",
+  "category_culture": "文化",
+  "category_food": "美食",
+  "category_activity": "活动",
+  "category_nightlife": "夜生活",
+  "comfort_good": "舒适",
+  "comfort_normal": "一般",
+  "comfort_crowded": "拥挤",
+  "search_placeholder": "搜索旅游景点...",
+  "detail_overview": "概述",
+  "detail_location": "位置",
+  "detail_comfort": "舒适度",
+  "loading": "加载中..."
+}
