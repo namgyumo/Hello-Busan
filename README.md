@@ -10,6 +10,7 @@
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![AWS EC2](https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white)](https://aws.amazon.com/ec2/)
+[![Google Stitch](https://img.shields.io/badge/Google_Stitch-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://stitch.withgoogle.com/)
 
 </div>
 
@@ -34,6 +35,7 @@
 | 분류 | 기술 |
 |------|------|
 | **Frontend** | HTML5, CSS3, JavaScript (Vanilla) |
+| **UI/Design** | Google Stitch |
 | **Backend** | Python |
 | **Database** | Supabase (PostgreSQL) |
 | **Deployment** | AWS EC2 |
