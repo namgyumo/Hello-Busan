@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관광지 상세 — Hello, Busan!</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/stitch.css">
+</head>
+<body>
+    <header class="header">
+        <a href="./index.html" class="header__logo">🌊 Hello, Busan!</a>
+        <select id="lang-select" class="lang-select">
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh">中文</option>
+            <option value="ru">Русский</option>
+        </select>
+    </header>
+
+    <main class="detail">
+        <section class="detail__hero" id="detail-hero">
+            <!-- 관광지 이미지 / 이름 -->
+        </section>
+
+        <section class="detail__info" id="detail-info">
+            <!-- 쾌적함 지수 + 실시간 혼잡도 + 날씨 + 교통 -->
+        </section>
+
+        <section class="detail__map">
+            <h3>📍 위치</h3>
+            <div id="detail-map" class="detail-map-container"></div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Hello, Busan!</p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./js/detail.js"></script>
+</body>
+</html>
