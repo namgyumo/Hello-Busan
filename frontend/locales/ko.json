@@ -1,0 +1,21 @@
+{
+  "app_title": "Hello Busan",
+  "app_subtitle": "부산 관광지 스마트 추천",
+  "nav_home": "홈",
+  "nav_map": "지도",
+  "nav_recommend": "추천",
+  "category_all": "전체",
+  "category_nature": "자연/경관",
+  "category_culture": "문화/역사",
+  "category_food": "맛집/카페",
+  "category_activity": "액티비티",
+  "category_nightlife": "야경",
+  "comfort_good": "쾌적",
+  "comfort_normal": "보통",
+  "comfort_crowded": "혼잡",
+  "search_placeholder": "관광지를 검색하세요...",
+  "detail_overview": "소개",
+  "detail_location": "위치",
+  "detail_comfort": "쾌적함 지수",
+  "loading": "로딩 중..."
+}
