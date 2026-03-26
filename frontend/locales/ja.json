@@ -1,0 +1,21 @@
+{
+  "app_title": "Hello Busan",
+  "app_subtitle": "スマート観光地おすすめ",
+  "nav_home": "ホーム",
+  "nav_map": "地図",
+  "nav_recommend": "おすすめ",
+  "category_all": "すべて",
+  "category_nature": "自然",
+  "category_culture": "文化",
+  "category_food": "グルメ",
+  "category_activity": "アクティビティ",
+  "category_nightlife": "ナイトライフ",
+  "comfort_good": "快適",
+  "comfort_normal": "普通",
+  "comfort_crowded": "混雑",
+  "search_placeholder": "観光地を検索...",
+  "detail_overview": "概要",
+  "detail_location": "所在地",
+  "detail_comfort": "快適度",
+  "loading": "読み込み中..."
+}
