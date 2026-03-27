@@ -133,8 +133,7 @@ async def get_recommendations(
         if search and search.strip():
             keyword = _sanitize_keyword(search)
             if keyword:
-                or_filter = f"(name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%)"
-                query.params = query.params.add("or", or_filter)
+                query = query.or_(f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%")
 
         # Supabase 기본 1000행 제한 우회: 페이지네이션으로 전체 조회
         all_spots = []

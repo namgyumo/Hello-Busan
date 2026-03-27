@@ -79,8 +79,7 @@ async def get_spots(
         if search and search.strip():
             keyword = _sanitize_keyword(search)
             if keyword:
-                or_filter = f"(name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%)"
-                count_query.params = count_query.params.add("or", or_filter)
+                count_query = count_query.or_(f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%")
 
         count_result = count_query.execute()
         total_count = count_result.count if hasattr(count_result, 'count') and count_result.count is not None else len(count_result.data or [])
@@ -98,8 +97,7 @@ async def get_spots(
         if search and search.strip():
             keyword = _sanitize_keyword(search)
             if keyword:
-                or_filter = f"(name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%)"
-                query.params = query.params.add("or", or_filter)
+                query = query.or_(f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%")
 
         # 위치 기반인 경우 전체 조회 후 필터링, 아닌 경우 페이지네이션 적용
         if lat and lng:
