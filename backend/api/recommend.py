@@ -69,11 +69,21 @@ async def get_recommendations(
             keyword = _sanitize_keyword(search)
             if keyword:
                 query = query.or_(
-                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%"
                 )
 
-        spots_result = query.execute()
-        spots = spots_result.data or []
+        # Supabase 기본 1000행 제한 우회: 페이지네이션으로 전체 조회
+        all_spots = []
+        page_size = 1000
+        page_offset = 0
+        while True:
+            page_result = query.range(page_offset, page_offset + page_size - 1).execute()
+            page_data = page_result.data or []
+            all_spots.extend(page_data)
+            if len(page_data) < page_size:
+                break
+            page_offset += page_size
+        spots = all_spots
 
         if not spots:
             return SuccessResponse(

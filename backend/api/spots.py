@@ -78,7 +78,7 @@ async def get_spots(
             keyword = _sanitize_keyword(search)
             if keyword:
                 count_query = count_query.or_(
-                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%"
                 )
 
         count_result = count_query.execute()
@@ -98,13 +98,22 @@ async def get_spots(
             keyword = _sanitize_keyword(search)
             if keyword:
                 query = query.or_(
-                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%"
                 )
 
         # 위치 기반인 경우 전체 조회 후 필터링, 아닌 경우 페이지네이션 적용
         if lat and lng:
-            result = query.execute()
-            spots_data = result.data or []
+            # Supabase 기본 1000행 제한 우회: 페이지네이션으로 전체 조회
+            spots_data = []
+            _page_size = 1000
+            _page_offset = 0
+            while True:
+                _page_result = query.range(_page_offset, _page_offset + _page_size - 1).execute()
+                _page_data = _page_result.data or []
+                spots_data.extend(_page_data)
+                if len(_page_data) < _page_size:
+                    break
+                _page_offset += _page_size
             spots_data = location_service.filter_by_radius(spots_data, lat, lng, radius)
             spots_data = location_service.sort_by_distance(spots_data, lat, lng)
             total_count = len(spots_data)

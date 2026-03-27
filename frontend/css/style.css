@@ -302,7 +302,7 @@ body{animation:pageIn 350ms ease-out}
 @keyframes heroWave{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
 /* Hero Image Slider — 3:2 카드, 우측 정렬 */
-.hero-slider{position:relative;z-index:2;width:92%;max-width:420px;aspect-ratio:3/2;margin:0 0 3.5rem auto;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.24),0 3px 10px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.15);flex-shrink:0;transform:rotate(-1.5deg);transition:transform .4s ease,box-shadow .4s ease}
+.hero-slider{position:relative;z-index:2;width:92%;max-width:420px;aspect-ratio:3/2;margin:0 0 3.5rem auto;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.24),0 3px 10px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.15);flex-shrink:0;transform:rotate(-1.5deg);transition:transform .4s ease,box-shadow .4s ease;touch-action:pan-y pinch-zoom}
 .hero-slider:hover{transform:rotate(0deg);box-shadow:0 14px 48px rgba(0,0,0,.30),0 5px 14px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.15)}
 .hero-slider__track{position:relative;width:100%;height:100%}
 .hero-slider__slide{position:absolute;inset:0;opacity:0;transition:opacity .8s ease-in-out;pointer-events:none}
@@ -424,9 +424,9 @@ body{animation:pageIn 350ms ease-out}
 .festival-empty{text-align:center;color:var(--color-secondary);padding:2rem;font-size:.85rem}
 /* Festival Modal */
 .festival-modal{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:1rem}
-.festival-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)}
-.festival-modal__content{position:relative;background:var(--color-surface);border-radius:var(--radius-xl);max-width:500px;width:100%;max-height:85vh;overflow-y:auto;padding:1.5rem;box-shadow:var(--shadow-lg);animation:fadeSlideUp .3s ease-out}
-.festival-modal__close{position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--color-text-secondary);line-height:1;padding:.25rem;z-index:1}
+.festival-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-tap-highlight-color:transparent}
+.festival-modal__content{position:relative;background:var(--color-surface);border-radius:var(--radius-xl);max-width:500px;width:100%;max-height:85vh;max-height:85dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:1.5rem;box-shadow:var(--shadow-lg);animation:fadeSlideUp .3s ease-out}
+.festival-modal__close{position:absolute;top:.5rem;right:.5rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--color-text-secondary);line-height:1;padding:.5rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;z-index:1}
 .festival-modal__close:hover{color:var(--color-text)}
 .festival-modal__img{width:100%;border-radius:var(--radius-md);margin-bottom:1rem;max-height:250px;object-fit:cover}
 .festival-modal__title{font-size:1.15rem;font-weight:800;margin-bottom:.5rem;color:var(--color-text)}
@@ -549,7 +549,7 @@ body{animation:pageIn 350ms ease-out}
 @keyframes forecastDetailIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .forecast-detail__header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
 .forecast-detail__title{font-size:1rem;font-weight:700;color:var(--color-text);margin:0}
-.forecast-detail__close{background:none;border:none;font-size:1.4rem;color:var(--color-text-secondary);cursor:pointer;padding:.2rem .4rem;border-radius:var(--radius-sm);transition:background var(--transition)}
+.forecast-detail__close{background:none;border:none;font-size:1.4rem;color:var(--color-text-secondary);cursor:pointer;padding:.5rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);transition:background var(--transition)}
 .forecast-detail__close:hover{background:var(--color-bg)}
 .forecast-detail__body{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem .75rem;margin-bottom:.75rem}
 .forecast-detail__item{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--color-text-secondary)}
@@ -581,7 +581,7 @@ body{animation:pageIn 350ms ease-out}
    SCREEN 2: MAP + RECOMMENDATIONS
    ============================================= */
 
-.page-map{padding-bottom:var(--bottom-nav-h);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.page-map{padding-bottom:var(--bottom-nav-h);height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 .page-map .header,.page-map .search-bar,.page-map .category-bar,.page-map .map-list-handle,.page-map .fallback-banner{flex-shrink:0}
 
 /* Search Bar */
@@ -679,7 +679,7 @@ body{animation:pageIn 350ms ease-out}
 .search-bar--focused{border-bottom-color:var(--color-primary);box-shadow:0 2px 8px rgba(0,102,204,.1)}
 
 /* Spot List */
-.spot-list-container{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:.75rem 1rem}
+.spot-list-container{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:.75rem 1rem}
 .spot-list-header{margin-bottom:.6rem}
 .spot-list-header__row{display:flex;align-items:center;gap:.5rem}
 .spot-list-title{font-size:1rem;font-weight:700;margin-bottom:.1rem}
@@ -750,12 +750,12 @@ body{animation:pageIn 350ms ease-out}
 .detail-main{padding-bottom:2rem}
 
 /* Gallery */
-.detail-gallery{width:100%;height:280px;overflow:hidden;position:relative}
+.detail-gallery{width:100%;height:280px;overflow:hidden;position:relative;touch-action:pan-y pinch-zoom}
 .detail-gallery img{width:100%;height:100%;object-fit:cover;transition:opacity .3s ease}
 .gallery-placeholder{width:100%;height:100%;background:linear-gradient(135deg,#0066CC,#00C9DB);display:flex;align-items:center;justify-content:center;font-size:3.5rem}
 
 /* Image Gallery Slideshow */
-.gallery-track{display:flex;height:100%;transition:transform .4s cubic-bezier(.25,.46,.45,.94)}
+.gallery-track{display:flex;height:100%;transition:transform .4s cubic-bezier(.25,.46,.45,.94);will-change:transform}
 .gallery-track img{flex-shrink:0;width:100%;height:100%;object-fit:cover}
 .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;border-radius:50%;background:rgba(255,255,255,.85);color:#333;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-md);transition:background .2s,transform .2s;z-index:5}
 .gallery-nav:hover{background:#fff;transform:translateY(-50%) scale(1.08)}
@@ -1003,15 +1003,20 @@ body{animation:pageIn 350ms ease-out}
 }
 .pwa-install-banner__close {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 4px;
+    right: 4px;
     background: none;
     border: none;
     font-size: 1.2rem;
     color: var(--color-text-secondary);
     cursor: pointer;
     line-height: 1;
-    padding: 2px 6px;
+    padding: 10px 12px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ===== Favorites / Bookmark ===== */
@@ -1089,7 +1094,7 @@ body{animation:pageIn 350ms ease-out}
 .course-map-notice{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:500;padding:.45rem 1rem;background:var(--color-primary);color:#fff;border-radius:var(--radius-full);font-size:.8rem;font-weight:600;box-shadow:var(--shadow-md);white-space:nowrap;animation:fadeSlideUp .3s ease-out}
 
 /* Course Panel */
-.course-panel{position:fixed;top:0;right:-400px;width:380px;max-width:90vw;height:100vh;background:var(--color-surface);z-index:1200;box-shadow:var(--shadow-lg);transition:right .35s cubic-bezier(.25,.46,.45,.94);display:flex;flex-direction:column;overflow:hidden}
+.course-panel{position:fixed;top:0;right:-400px;width:380px;max-width:90vw;height:100vh;height:100dvh;background:var(--color-surface);z-index:1200;box-shadow:var(--shadow-lg);transition:right .35s cubic-bezier(.25,.46,.45,.94);display:flex;flex-direction:column;overflow:hidden}
 .course-panel.open{right:0}
 
 /* Course panel backdrop */
@@ -1103,7 +1108,7 @@ body{animation:pageIn 350ms ease-out}
 .course-panel__close:hover{color:var(--color-text);transform:scale(1.1)}
 .course-panel__close:active{transform:scale(.9)}
 
-.course-panel__body{flex:1;overflow-y:auto;padding:1rem}
+.course-panel__body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:1rem}
 
 /* Course Fields */
 .course-field{margin-bottom:1rem}
@@ -1175,7 +1180,7 @@ body{animation:pageIn 350ms ease-out}
 
 /* Responsive: Mobile bottom sheet */
 @media(max-width:767px){
-    .course-panel{top:auto;bottom:-100%;right:0;left:0;width:100%;max-width:100%;height:50vh;border-radius:var(--radius-xl) var(--radius-xl) 0 0;transition:bottom .35s cubic-bezier(.25,.46,.45,.94)}
+    .course-panel{top:auto;bottom:-100%;right:0;left:0;width:100%;max-width:100%;height:65vh;height:65dvh;border-radius:var(--radius-xl) var(--radius-xl) 0 0;transition:bottom .35s cubic-bezier(.25,.46,.45,.94)}
     .course-panel.open{bottom:0}
 }
 @media(min-width:768px){
@@ -1240,6 +1245,9 @@ body{animation:pageIn 350ms ease-out}
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .offline-banner.visible {
+    display: flex;
+}
+.is-offline .offline-banner {
     display: flex;
 }
 .offline-banner__icon {
@@ -1344,7 +1352,7 @@ body.is-offline .header {
 /* Header with title + close */
 .directions-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--color-border)}
 .directions-header__title{font-size:1rem;font-weight:700;color:var(--color-text);margin:0}
-.directions-header__close{background:none;border:none;font-size:1.4rem;color:var(--color-secondary);cursor:pointer;padding:.2rem;line-height:1;transition:color var(--transition)}
+.directions-header__close{background:none;border:none;font-size:1.4rem;color:var(--color-secondary);cursor:pointer;padding:.5rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;line-height:1;transition:color var(--transition)}
 .directions-header__close:hover{color:var(--color-text)}
 
 /* Direct distance label */
@@ -1359,7 +1367,7 @@ body.is-offline .header {
 .directions-tab__time{font-size:.8rem;white-space:nowrap}
 
 /* Route detail section */
-.directions-route-detail{padding:.75rem 1rem}
+.directions-route-detail{padding:.75rem 1rem;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 
 /* Summary grid */
 .directions-summary{display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:.5rem;margin-bottom:.75rem}
@@ -1557,4 +1565,191 @@ body.is-offline .header {
     html:not([data-theme="light"]) .weather-page-air__level--moderate{background:#78350F;color:#FBBF24}
     html:not([data-theme="light"]) .weather-page-air__level--unhealthy{background:#7F1D1D;color:#F87171}
     html:not([data-theme="light"]) .weather-page-air__level--very-unhealthy{background:#7F1D1D;color:#FCA5A5}
+}
+
+/* =============================================
+   MOBILE BUG FIXES (max-width: 767px)
+   ============================================= */
+@media(max-width:767px){
+
+    /* --- 1. Bottom Navigation: ensure adequate touch targets (min 44px) --- */
+    .bottom-nav{height:60px}
+    .bottom-nav__item{min-height:44px;min-width:44px;padding:.3rem 0;font-size:.7rem}
+    .bottom-nav__icon{font-size:1.3rem}
+    .page-home,.page-detail,.page-favorites,.page-weather,.page-offline{padding-bottom:60px}
+    .page-map{padding-bottom:60px}
+    .toast{bottom:calc(60px + 12px)}
+    .sw-update-toast{bottom:calc(60px + 16px)}
+    .pwa-install-banner{bottom:calc(60px + 12px)}
+
+    /* --- 2. Touch targets: all interactive elements min 44x44 --- */
+    .hero-slider__arrow{width:44px;height:44px;font-size:1rem;opacity:1}
+    .gallery-nav{width:44px;height:44px;font-size:1.2rem}
+    .theme-toggle{min-width:44px;min-height:44px}
+    .btn-icon{min-width:44px;min-height:44px}
+    .btn-back{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+    .category-chip{min-height:44px;display:inline-flex;align-items:center;padding:.4rem .9rem}
+    .festival-filter-btn{min-height:40px;padding:.45rem .85rem}
+    .festival-month-nav__btn{min-width:44px;min-height:44px}
+    .map-ctrl-btn{min-height:44px;padding:.55rem .85rem}
+    .map-list-handle__tab{min-height:44px;padding:.45rem .9rem}
+    .forecast-detail__close{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+    .menu-filter{min-height:40px;padding:.45rem .8rem}
+    .weather-spots-tab{min-height:40px;padding:.45rem .9rem}
+    .share-btn{min-height:44px;padding:.55rem .9rem}
+    .favorite-btn{min-width:44px;min-height:44px}
+    .btn-directions{min-height:44px}
+    .directions-tab{min-height:48px}
+    .forecast-card{min-height:44px}
+
+    /* --- 3. Font sizes: ensure readability (min ~13px for secondary, ~14px for body) --- */
+    .bottom-nav__label{font-size:.72rem}
+    .spot-card__cat{font-size:.72rem}
+    .spot-card__grade{font-size:.72rem}
+    .spot-card__info{font-size:.78rem}
+    .popular-card__cat{font-size:.75rem}
+    .popular-card__address{font-size:.78rem}
+    .popular-card__badge-grade{font-size:.65rem}
+    .festival-card__date{font-size:.75rem}
+    .festival-card__place{font-size:.75rem}
+    .forecast-card__date{font-size:.7rem}
+    .forecast-card__rain{font-size:.7rem}
+    .forecast-card__score{font-size:.7rem}
+    .forecast-card__badge{font-size:.65rem}
+    .air-quality__metric-label{font-size:.72rem}
+    .air-quality__footer{font-size:.75rem}
+    .sse-status{font-size:.75rem}
+    .nearby-card__name{font-size:.82rem}
+    .nearby-card__dist{font-size:.72rem}
+    .nearby-card__comfort{font-size:.68rem}
+    .comfort-component__label{font-size:.75rem}
+    .comfort-score-big__label{font-size:.75rem}
+    .weather-page-hourly__item-rain{font-size:.65rem}
+
+    /* --- 4. Hero section: prevent horizontal overflow --- */
+    .hero{overflow-x:hidden}
+    .hero::before{right:-10%;width:250px;height:250px}
+    .hero-slider{margin-right:4%}
+
+    /* --- 5. Card grids: single column on mobile --- */
+    .popular-list{grid-template-columns:1fr}
+    .festival-list{grid-template-columns:1fr}
+    .weather-spots-list{grid-template-columns:1fr}
+
+    /* --- 6. Festival modal: full-screen on mobile --- */
+    .festival-modal{padding:.5rem}
+    .festival-modal__content{max-width:100%;max-height:90vh;border-radius:var(--radius-lg)}
+
+    /* --- 7. Detail page: prevent horizontal scrolling --- */
+    .detail-main{overflow-x:hidden}
+    .info-list li{flex-wrap:wrap}
+    .info-value{flex-basis:100%;margin-top:.1rem;padding-left:calc(1.4em + .5rem + 4rem)}
+    .detail-description{overflow-wrap:break-word;word-break:break-word}
+    .detail-gallery{height:220px}
+
+    /* --- 8. Map page: search usability (16px prevents iOS zoom on focus) --- */
+    .search-bar__input{font-size:16px}
+
+    /* --- 9. Weather page: mobile optimizations --- */
+    .weather-page-current{margin:.75rem;padding:1.5rem 1rem}
+    .weather-page-current__temp{font-size:2.8rem}
+    .weather-page-current__icon{font-size:3.5rem}
+    .weather-page-current__details{grid-template-columns:repeat(2,1fr);gap:.5rem}
+    .weather-page-air{padding:0 .75rem .75rem}
+    .weather-page-air__details{grid-template-columns:1fr 1fr}
+    .weather-page-air__detail-item{padding:.5rem .65rem;font-size:.82rem}
+    .weather-page-hourly__scroll{padding:0 .75rem}
+    .weather-section__title{font-size:1rem}
+
+    /* --- 10. Favorites page: mobile optimizations --- */
+    .favorites-main{padding:.75rem}
+    .favorites-header{margin-bottom:.75rem}
+    .favorites-title{font-size:1.15rem}
+    .favorites-empty{padding:2rem .75rem}
+
+    /* --- 11. Prevent horizontal overflow on all pages --- */
+    body{overflow-x:hidden}
+    .home-section{overflow-x:hidden}
+
+    /* --- 12. Course panel: taller on mobile for usability --- */
+    .course-panel{height:65vh}
+
+    /* --- 13. Directions panel: ensure it fits mobile viewport --- */
+    .directions-summary{grid-template-columns:repeat(2,1fr)}
+    .directions-tab__time{font-size:.75rem}
+
+    /* --- 14. Comfort dashboard: ensure proper spacing --- */
+    .comfort-dashboard{margin:.5rem .75rem;padding:.85rem}
+    .comfort-components{gap:.4rem}
+    .comfort-component{padding:.5rem .3rem}
+
+    /* --- 15. Air quality section on home: mobile spacing --- */
+    .air-quality{margin:.5rem .75rem}
+
+    /* --- 16. Weather banner: mobile spacing --- */
+    .weather-banner{margin:.5rem .75rem}
+}
+
+/* =============================================
+   EXTRA-SMALL SCREEN FIXES (max-width: 374px)
+   ============================================= */
+@media(max-width:374px){
+
+    /* Tighter spacing */
+    .header{padding:.5rem .75rem}
+    .header__logo{font-size:1.05rem}
+    .lang-select{font-size:.75rem;padding:.25rem .4rem}
+
+    /* Category grid: 2 columns on very small screens */
+    .category-grid{grid-template-columns:repeat(2,1fr);gap:.5rem}
+    .cat-card{padding:.85rem .4rem}
+    .cat-card__icon{font-size:1.5rem}
+    .cat-card__name{font-size:.75rem}
+
+    /* Spot card: tighter layout */
+    .spot-card{padding:.6rem .7rem;gap:.5rem}
+    .spot-card__score{width:44px;height:44px}
+    .spot-card__score-num{font-size:.95rem}
+    .spot-card__name{font-size:.88rem}
+    .spot-card__thumb{width:44px;height:44px}
+
+    /* Detail page */
+    .detail-title-bar__name{font-size:1.1rem}
+    .comfort-score-ring{width:60px;height:60px}
+    .comfort-score-big__number{font-size:1.5rem}
+    .info-value{padding-left:0;flex-basis:auto}
+    .info-list li{flex-direction:column;gap:.15rem}
+    .info-label{width:auto}
+
+    /* Popular cards */
+    .popular-card__image{height:140px}
+    .popular-card__body{padding:.6rem .75rem}
+
+    /* Festival modal */
+    .festival-modal{padding:.25rem}
+    .festival-modal__content{padding:1rem}
+    .festival-modal__img{max-height:180px}
+
+    /* Weather page */
+    .weather-page-current__temp{font-size:2.2rem}
+    .weather-page-current__icon{font-size:3rem}
+    .weather-page-current__details{gap:.4rem}
+    .weather-page-current__detail-item{padding:.4rem .5rem}
+    .weather-page-current__detail-value{font-size:.82rem}
+
+    /* Forecast cards: narrower */
+    .forecast-card{width:105px;padding:.7rem .5rem}
+
+    /* Nearby cards */
+    .nearby-card{width:115px;padding:.6rem}
+
+    /* Share buttons: stack vertically */
+    .share-buttons{flex-direction:column}
+    .share-btn{justify-content:center;width:100%}
+
+    /* Directions */
+    .directions-summary{grid-template-columns:1fr}
+
+    /* Course panel: more height on tiny screens */
+    .course-panel{height:75vh}
 }

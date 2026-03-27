@@ -13,6 +13,7 @@ from backend.collector.crowd import (
 )
 from backend.services.score_calculator import ScoreCalculator
 from datetime import datetime
+import hashlib
 import logging
 
 router = APIRouter(prefix="/api/v1/comfort", tags=["comfort"])
@@ -99,7 +100,7 @@ async def get_comfort_timeline(spot_id: str):
         weather_score = _score_calc._calc_weather_score(weather_map.get(region, {}))
 
         # spot_id 기반 결정적 오프셋 (crowd.py와 동일 로직)
-        spot_hash = hash(str(spot_id)) % 1000 / 1000.0
+        spot_hash = int(hashlib.md5(str(spot_id).encode()).hexdigest(), 16) % 1000 / 1000.0
         spot_offset = (spot_hash - 0.5) * 0.3
 
         now = datetime.now()

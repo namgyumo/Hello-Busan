@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 from backend.collector.base import BaseCollector
 from backend.db.supabase import get_supabase
 from backend.config import settings
+import hashlib
 import logging
 import math
 from datetime import datetime, timezone
@@ -113,7 +114,7 @@ class CrowdCollector(BaseCollector):
 
         # 장소별 고유 변동 (spot_id 기반 결정적 오프셋으로 다양성 확보)
         spot_id = spot.get("id", 0)
-        spot_hash = hash(str(spot_id)) % 1000 / 1000.0  # 0.0~0.999
+        spot_hash = int(hashlib.md5(str(spot_id).encode()).hexdigest(), 16) % 1000 / 1000.0  # 0.0~0.999
         spot_offset = (spot_hash - 0.5) * 0.3  # -0.15 ~ +0.15
         crowd_level += spot_offset
 

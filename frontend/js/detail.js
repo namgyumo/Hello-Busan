@@ -514,12 +514,19 @@
         nextBtn.addEventListener('click', () => goTo(currentIdx + 1));
         dots.forEach(dot => dot.addEventListener('click', () => goTo(Number(dot.dataset.idx))));
 
-        // Swipe support
+        // Swipe support (tracks both axes to avoid hijacking vertical scroll)
         let startX = 0;
-        container.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+        let startY = 0;
+        container.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
         container.addEventListener('touchend', (e) => {
-            const diff = startX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) > 40) goTo(currentIdx + (diff > 0 ? 1 : -1));
+            const diffX = startX - e.changedTouches[0].clientX;
+            const diffY = startY - e.changedTouches[0].clientY;
+            if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+                goTo(currentIdx + (diffX > 0 ? 1 : -1));
+            }
         }, { passive: true });
 
         // Keyboard support

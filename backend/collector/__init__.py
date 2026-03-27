@@ -8,6 +8,8 @@ from backend.collector.crowd import CrowdCollector
 from backend.collector.weather import WeatherCollector
 from backend.collector.transport import TransportCollector
 from backend.collector.busan_api import BusanApiCollector
+from backend.collector.festivals import FestivalCollector
+from backend.collector.air_quality import AirQualityCollector
 from backend.collector.scheduler import CollectorScheduler
 
 __all__ = [
@@ -17,5 +19,7 @@ __all__ = [
     "WeatherCollector",
     "TransportCollector",
     "BusanApiCollector",
+    "FestivalCollector",
+    "AirQualityCollector",
     "CollectorScheduler",
 ]

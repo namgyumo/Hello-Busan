@@ -191,6 +191,17 @@
 
             // 섹션 표시 (기본 display:none)
             if (section) section.style.display = '';
+
+            // Auto-scroll to "now" item on mobile
+            requestAnimationFrame(function() {
+                var nowItem = container.querySelector('.weather-page-hourly__item--now');
+                if (nowItem) {
+                    var scrollParent = container.parentElement;
+                    if (scrollParent && scrollParent.scrollWidth > scrollParent.clientWidth) {
+                        scrollParent.scrollLeft = 0; // "now" is the first item
+                    }
+                }
+            });
         } catch (e) {
             console.warn('타임라인 로드 실패:', e);
             _renderTimelineFallback(container);
@@ -324,6 +335,20 @@
             });
 
             if (section) section.style.display = '';
+
+            // Auto-scroll to today's card on mobile
+            requestAnimationFrame(function() {
+                var todayCard = list.querySelector('.forecast-card--today');
+                if (todayCard && window.innerWidth < 768) {
+                    var scrollContainer = list.parentElement;
+                    if (scrollContainer && scrollContainer.scrollWidth > scrollContainer.clientWidth) {
+                        var cardLeft = todayCard.offsetLeft;
+                        var containerWidth = scrollContainer.clientWidth;
+                        var cardWidth = todayCard.offsetWidth;
+                        scrollContainer.scrollLeft = cardLeft - (containerWidth - cardWidth) / 2;
+                    }
+                }
+            });
         } catch (e) {
             console.warn('7일 예보 로드 실패:', e);
         }

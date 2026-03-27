@@ -210,6 +210,11 @@
         modalBody.innerHTML = html;
         modal.style.display = '';
         document.body.style.overflow = 'hidden';
+        // Prevent iOS background scroll-through when modal is open
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.dataset.scrollY = String(window.scrollY);
+        document.body.style.top = '-' + window.scrollY + 'px';
 
         // Focus trap
         if (modalClose) modalClose.focus();
@@ -218,7 +223,13 @@
     function closeFestivalModal() {
         if (!modal) return;
         modal.style.display = 'none';
+        // Restore iOS background scroll position
+        var scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
         document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.top = '';
+        window.scrollTo(0, scrollY);
     }
 
     function _statusLabel(status) {

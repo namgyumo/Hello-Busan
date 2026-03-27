@@ -103,6 +103,22 @@
         loadHeatmap();
     });
 
+    // 11) Mobile keyboard viewport resize — invalidate map when virtual keyboard opens/closes
+    if (window.visualViewport) {
+        let prevHeight = window.visualViewport.height;
+        window.visualViewport.addEventListener('resize', () => {
+            const currHeight = window.visualViewport.height;
+            // Only invalidate map if height changed significantly (keyboard open/close)
+            if (Math.abs(currHeight - prevHeight) > 100) {
+                setTimeout(() => {
+                    const map = MapModule.getMap();
+                    if (map) map.invalidateSize();
+                }, 300);
+            }
+            prevHeight = currHeight;
+        });
+    }
+
     // ── 함수 정의 ──
 
     async function loadSpots(append) {

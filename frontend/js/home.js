@@ -397,6 +397,20 @@
             });
 
             section.style.display = '';
+
+            // Auto-scroll to today's card on mobile
+            requestAnimationFrame(function() {
+                var todayCard = list.querySelector('.forecast-card--today');
+                if (todayCard && window.innerWidth < 768) {
+                    var scrollContainer = document.getElementById('forecast-scroll');
+                    if (scrollContainer) {
+                        var cardLeft = todayCard.offsetLeft;
+                        var containerWidth = scrollContainer.clientWidth;
+                        var cardWidth = todayCard.offsetWidth;
+                        scrollContainer.scrollLeft = cardLeft - (containerWidth - cardWidth) / 2;
+                    }
+                }
+            });
         } catch (e) {
             console.warn('7일 예보 로드 실패:', e);
         }
@@ -621,21 +635,25 @@
             });
         });
 
-        // Touch swipe support
+        // Touch swipe support (tracks both axes to avoid hijacking vertical scroll)
         var touchStartX = 0;
-        var touchEndX = 0;
+        var touchStartY = 0;
         var SWIPE_THRESHOLD = 50;
 
         slider.addEventListener('touchstart', function(e) {
             touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
         }, { passive: true });
 
         slider.addEventListener('touchend', function(e) {
-            touchEndX = e.changedTouches[0].screenX;
-            var diff = touchStartX - touchEndX;
-            if (Math.abs(diff) > SWIPE_THRESHOLD) {
+            var touchEndX = e.changedTouches[0].screenX;
+            var touchEndY = e.changedTouches[0].screenY;
+            var diffX = touchStartX - touchEndX;
+            var diffY = touchStartY - touchEndY;
+            // Only trigger slide change if horizontal swipe is dominant
+            if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
                 stopAuto();
-                if (diff > 0) next(); else prev();
+                if (diffX > 0) next(); else prev();
                 startAuto();
             }
         }, { passive: true });

@@ -162,7 +162,8 @@ const MapModule = (() => {
                     popupAnchor: [0, -36],
                 }),
             }).addTo(markerLayer);
-            marker.bindPopup(popupContent, { maxWidth: 260, className: 'map-popup-container' });
+            var popupMaxWidth = window.innerWidth < 400 ? 200 : 260;
+            marker.bindPopup(popupContent, { maxWidth: popupMaxWidth, className: 'map-popup-container' });
         });
 
         // Update spot count display
