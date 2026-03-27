@@ -31,6 +31,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# 외부 라이브러리 로그 레벨 억제
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("hpack").setLevel(logging.WARNING)
+
 # 글로벌 인스턴스
 cache = CacheManager()
 model = RecommendModel()
@@ -106,6 +111,7 @@ def create_app() -> FastAPI:
     from backend.api.analytics import router as analytics_router
     from backend.api.course import router as course_router
     from backend.api.transport import router as transport_router
+    from backend.api.air_quality import router as air_quality_router
 
     app.include_router(spots_router)
     app.include_router(recommend_router)
@@ -115,6 +121,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics_router)
     app.include_router(course_router)
     app.include_router(transport_router)
+    app.include_router(air_quality_router)
 
     # 프론트엔드 정적 파일 서빙
     frontend_dir = Path(__file__).parent.parent / "frontend"
@@ -132,12 +139,26 @@ def create_app() -> FastAPI:
             return FileResponse(manifest_path, media_type="application/manifest+json")
         return {"error": "manifest not found"}
 
+    @app.get("/sw.js")
+    async def service_worker():
+        """Service Worker (루트 스코프 필요, 캐시 방지)"""
+        sw_path = frontend_dir / "sw.js"
+        if sw_path.exists():
+            return FileResponse(
+                sw_path,
+                media_type="application/javascript",
+                headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+            )
+        return {"error": "sw.js not found"}
+
+    _no_cache = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+
     @app.get("/")
     async def index():
         """메인 페이지 (랜딩)"""
         index_path = frontend_dir / "index.html"
         if index_path.exists():
-            return FileResponse(index_path)
+            return FileResponse(index_path, headers=_no_cache)
         return {"service": "Hello-Busan", "docs": "/docs"}
 
     @app.get("/map.html")
@@ -145,7 +166,7 @@ def create_app() -> FastAPI:
         """지도 + 추천 페이지"""
         map_path = frontend_dir / "map.html"
         if map_path.exists():
-            return FileResponse(map_path)
+            return FileResponse(map_path, headers=_no_cache)
         return {"error": "page not found"}
 
     @app.get("/detail.html")
@@ -153,7 +174,31 @@ def create_app() -> FastAPI:
         """관광지 상세 페이지"""
         detail_path = frontend_dir / "detail.html"
         if detail_path.exists():
-            return FileResponse(detail_path)
+            return FileResponse(detail_path, headers=_no_cache)
+        return {"error": "page not found"}
+
+    @app.get("/favorites.html")
+    async def favorites_page():
+        """즐겨찾기 페이지"""
+        fav_path = frontend_dir / "favorites.html"
+        if fav_path.exists():
+            return FileResponse(fav_path, headers=_no_cache)
+        return {"error": "page not found"}
+
+    @app.get("/weather.html")
+    async def weather_page():
+        """날씨 페이지"""
+        weather_path = frontend_dir / "weather.html"
+        if weather_path.exists():
+            return FileResponse(weather_path, headers=_no_cache)
+        return {"error": "page not found"}
+
+    @app.get("/offline.html")
+    async def offline_page():
+        """오프라인 페이지"""
+        offline_path = frontend_dir / "offline.html"
+        if offline_path.exists():
+            return FileResponse(offline_path, headers=_no_cache)
         return {"error": "page not found"}
 
     @app.get("/api/v1/health")

@@ -51,7 +51,7 @@ const Category = (() => {
         const bar = document.getElementById('category-bar');
         if (!bar) return;
 
-        const chip = bar.querySelector(`[data-category="${category}"]`);
+        const chip = Array.from(bar.querySelectorAll('[data-category]')).find(el => el.dataset.category === category);
         if (!chip) return;
 
         const allChip = bar.querySelector('[data-category=""]');

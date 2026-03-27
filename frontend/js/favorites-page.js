@@ -67,13 +67,13 @@
         ids.forEach(id => {
             const card = document.createElement('a');
             card.className = 'spot-card';
-            card.href = `/detail.html?id=${id}`;
+            card.href = `/detail.html?id=${encodeURIComponent(id)}`;
             card.innerHTML = `
                 <div class="spot-card__thumb"><div class="spot-card__thumb-placeholder">&#x1F30A;</div></div>
                 <div class="spot-card__body">
-                    <div class="spot-card__name">ID: ${id}</div>
+                    <div class="spot-card__name">ID: ${_escapeHtml(String(id))}</div>
                 </div>
-                <button class="favorite-btn favorite-btn--active" data-spot-id="${id}" aria-label="${I18n.t('favorite_remove')}" type="button">
+                <button class="favorite-btn favorite-btn--active" data-spot-id="${_escapeHtml(String(id))}" aria-label="${I18n.t('favorite_remove')}" type="button">
                     <span class="favorite-btn__icon">&#x2764;</span>
                 </button>
             `;

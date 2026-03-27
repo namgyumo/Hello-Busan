@@ -35,13 +35,16 @@
     <link rel="alternate" hreflang="x-default" href="https://hellobusan.kr/favorites.html">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=4">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
     <meta name="theme-color" content="#0066CC">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
+    <script>
+    (function(){try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+    </script>
 </head>
 <body class="page-favorites">
     <!-- Offline Banner -->
@@ -71,7 +74,7 @@
 
     <main class="favorites-main" id="main-content">
         <div class="favorites-header">
-            <h1 class="favorites-title" data-i18n="nav_favorites">저장한 관광지</h1>
+            <h1 class="favorites-title" data-i18n="favorites_title">저장한 관광지</h1>
             <p class="favorites-desc" data-i18n="favorites_desc">마음에 드는 관광지를 저장하고 관리하세요</p>
         </div>
         <div id="favorites-list" class="favorites-list">
@@ -90,6 +93,10 @@
         <a href="/map.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
             <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/weather.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
+            <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
         </a>
         <a href="/favorites.html" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
             <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>

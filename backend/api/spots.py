@@ -19,6 +19,16 @@ cache = CacheManager()
 comfort_service = ComfortService()
 location_service = LocationService()
 
+
+def _sanitize_keyword(raw: str) -> str:
+    """PostgREST or_ 필터에 안전하게 사용할 수 있도록 특수문자 제거"""
+    kw = raw.strip()
+    # PostgREST 필터 구분자 및 와일드카드 제거
+    for ch in ("%", "\\", ",", "(", ")"):
+        kw = kw.replace(ch, "")
+    return kw
+
+
 CATEGORY_MAP = {
     "nature": {"name": "자연/경관", "icon": "mountain"},
     "culture": {"name": "문화/역사", "icon": "temple"},
@@ -41,6 +51,13 @@ async def get_spots(
     offset: int = Query(0, ge=0),
 ):
     """[API-001] 위치 기반 관광지 목록 조회"""
+    # lat/lng 중 하나만 제공된 경우 에러 반환 (DB 쿼리 전에 검증)
+    if (lat is not None) != (lng is not None):
+        raise HTTPException(
+            status_code=400,
+            detail="lat과 lng는 함께 제공해야 합니다",
+        )
+
     cache_key = f"spots:{lat}:{lng}:{radius}:{category}:{search}:{lang}:{limit}:{offset}"
     cached = await cache.get(cache_key)
     if cached:
@@ -58,10 +75,11 @@ async def get_spots(
             else:
                 count_query = count_query.in_("category_id", categories)
         if search and search.strip():
-            keyword = search.strip().replace("%", "").replace("\\", "")
-            count_query = count_query.or_(
-                f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
-            )
+            keyword = _sanitize_keyword(search)
+            if keyword:
+                count_query = count_query.or_(
+                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                )
 
         count_result = count_query.execute()
         total_count = count_result.count if hasattr(count_result, 'count') and count_result.count is not None else len(count_result.data or [])
@@ -77,17 +95,11 @@ async def get_spots(
                 query = query.in_("category_id", categories)
 
         if search and search.strip():
-            keyword = search.strip().replace("%", "").replace("\\", "")
-            query = query.or_(
-                f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
-            )
-
-        # lat/lng 중 하나만 제공된 경우 에러 반환
-        if (lat is not None) != (lng is not None):
-            raise HTTPException(
-                status_code=400,
-                detail="lat과 lng는 함께 제공해야 합니다",
-            )
+            keyword = _sanitize_keyword(search)
+            if keyword:
+                query = query.or_(
+                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                )
 
         # 위치 기반인 경우 전체 조회 후 필터링, 아닌 경우 페이지네이션 적용
         if lat and lng:

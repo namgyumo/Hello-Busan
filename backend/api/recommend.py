@@ -17,6 +17,16 @@ import logging
 router = APIRouter(prefix="/api/v1/recommend", tags=["recommend"])
 logger = logging.getLogger(__name__)
 cache = CacheManager()
+
+
+def _sanitize_keyword(raw: str) -> str:
+    """PostgREST or_ 필터에 안전하게 사용할 수 있도록 특수문자 제거"""
+    kw = raw.strip()
+    for ch in ("%", "\\", ",", "(", ")"):
+        kw = kw.replace(ch, "")
+    return kw
+
+
 model = RecommendModel()
 feature_builder = FeatureBuilder()
 fallback = FallbackRecommender()
@@ -56,10 +66,11 @@ async def get_recommendations(
                 query = query.in_("category_id", cat_list)
 
         if search and search.strip():
-            keyword = search.strip().replace("%", "").replace("\\", "")
-            query = query.or_(
-                f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
-            )
+            keyword = _sanitize_keyword(search)
+            if keyword:
+                query = query.or_(
+                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                )
 
         spots_result = query.execute()
         spots = spots_result.data or []
@@ -153,6 +164,8 @@ async def get_recommendations(
         await cache.set(cache_key, response.model_dump(), ttl=180)
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"추천 생성 실패: {e}")
         raise HTTPException(status_code=500, detail="추천 생성 중 오류 발생")

@@ -104,6 +104,7 @@ class ScoreCalculator:
                 sb.table("crowd_data")
                 .select("spot_id, crowd_level, crowd_ratio")
                 .order("timestamp", desc=True)
+                .limit(1000)
                 .execute()
             )
             crowd_map = {}
@@ -127,6 +128,7 @@ class ScoreCalculator:
                 sb.table("weather_data")
                 .select("*")
                 .order("timestamp", desc=True)
+                .limit(500)
                 .execute()
             )
             weather_map: Dict[str, Dict] = {}

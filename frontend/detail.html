@@ -36,13 +36,16 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=4">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
     <meta name="theme-color" content="#0066CC">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
+    <script>
+    (function(){try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+    </script>
 </head>
 <body class="page-detail">
     <!-- Offline Banner -->
@@ -119,6 +122,35 @@
             </div>
         </div>
 
+        <!-- Air Quality (shown for outdoor spots: nature, activity, nightview) -->
+        <div class="air-quality-detail" id="detail-air-quality" style="display:none">
+            <div class="air-quality__header">
+                <span class="air-quality__icon" id="detail-aq-icon" aria-hidden="true"></span>
+                <h3 class="air-quality__title" data-i18n="aq_outdoor_notice">야외 활동 시 대기질을 확인하세요</h3>
+            </div>
+            <div class="air-quality__grade-bar" id="detail-aq-grade-bar">
+                <span class="air-quality__grade-label" id="detail-aq-grade-label"></span>
+            </div>
+            <div class="air-quality__metrics">
+                <div class="air-quality__metric">
+                    <span class="air-quality__metric-label" data-i18n="aq_pm25">PM2.5</span>
+                    <span class="air-quality__metric-value" id="detail-aq-pm25">--</span>
+                </div>
+                <div class="air-quality__metric">
+                    <span class="air-quality__metric-label" data-i18n="aq_pm10">PM10</span>
+                    <span class="air-quality__metric-value" id="detail-aq-pm10">--</span>
+                </div>
+                <div class="air-quality__metric">
+                    <span class="air-quality__metric-label" data-i18n="aq_cai">통합대기환경지수</span>
+                    <span class="air-quality__metric-value" id="detail-aq-cai">--</span>
+                </div>
+            </div>
+            <div class="air-quality__footer">
+                <span class="air-quality__station" id="detail-aq-station"></span>
+                <span class="air-quality__time" id="detail-aq-time"></span>
+            </div>
+        </div>
+
         <!-- Directions Button (shown by detail.js when coordinates are available) -->
         <div class="directions-btn-wrap" id="directions-btn-wrap" style="display:none">
             <button class="btn-directions" id="btn-directions" aria-label="길찾기">
@@ -185,6 +217,10 @@
         <a href="/map.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
             <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/weather.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
+            <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
         </a>
         <a href="/favorites.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>

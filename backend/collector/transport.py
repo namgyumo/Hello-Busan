@@ -98,12 +98,24 @@ class TransportCollector(BaseCollector):
         """
         접근성 점수 계산 (0~100)
         - 가까운 정류장이 많을수록 높음
+        - 가장 가까운 정류장의 거리도 반영
         """
         if not stations:
             return 0
 
         count_score = min(len(stations) / 5, 1.0)
-        return int(count_score * 100)
+
+        # 가장 가까운 정류장 거리 기반 점수 (500m 이내 만점, 2000m 이상 0점)
+        nearest_dist = float(stations[0].get("distance", 1000))
+        if nearest_dist <= 500:
+            dist_score = 1.0
+        elif nearest_dist >= 2000:
+            dist_score = 0.0
+        else:
+            dist_score = 1.0 - (nearest_dist - 500) / 1500
+
+        # 정류장 수 50% + 거리 50%
+        return int((count_score * 0.5 + dist_score * 0.5) * 100)
 
     async def save(self, data: List[Dict]) -> int:
         """교통 데이터 저장"""

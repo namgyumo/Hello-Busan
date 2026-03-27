@@ -72,7 +72,10 @@ class ModelTrainer:
             return {"status": "failed", "error": "no features"}
 
         X = df[feature_cols].values
-        y = df[target_col].values if target_col in df.columns else np.random.rand(len(df))
+        if target_col not in df.columns:
+            logger.error(f"타겟 컬럼 '{target_col}'이 데이터에 없음 — 학습 중단")
+            return {"status": "failed", "error": f"target column '{target_col}' not found"}
+        y = df[target_col].values
 
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42,

@@ -64,6 +64,8 @@ class FestivalCollector(BaseCollector):
                     continue
 
                 content_id = item.get("contentid", "")
+                if not content_id:
+                    continue
                 title = (item.get("title") or "").strip()
                 if not title:
                     continue

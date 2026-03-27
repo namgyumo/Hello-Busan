@@ -105,9 +105,12 @@
             }
 
             var res = await fetch(API_BASE + '/events/festivals?' + params);
+            if (!res.ok) {
+                throw new Error('HTTP ' + res.status);
+            }
             var json = await res.json();
 
-            if (!json.success || !json.data || json.data.length === 0) {
+            if (!json.success || !Array.isArray(json.data) || json.data.length === 0) {
                 listEl.innerHTML = '';
                 if (emptyEl) emptyEl.style.display = '';
                 return;
@@ -198,7 +201,7 @@
             html += '<div class="festival-modal__desc">' + safeDesc + '</div>';
         }
 
-        if (festival.lat && festival.lng) {
+        if (festival.lat != null && festival.lng != null) {
             html += '<a class="festival-modal__map-link" href="/map.html?lat=' + festival.lat + '&lng=' + festival.lng + '&zoom=15" target="_blank">' +
                 '&#x1F5FA; ' + _t('detail_location') +
             '</a>';

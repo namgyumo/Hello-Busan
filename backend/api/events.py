@@ -69,7 +69,7 @@ async def get_heatmap():
         )
 
 
-@router.get("/events")
+@router.get("/events/stream")
 async def stream_events(request: Request):
     """[API-008] SSE 실시간 갱신 스트림"""
     return StreamingResponse(
@@ -140,32 +140,33 @@ async def get_festivals(
         sb = get_supabase()
         query = sb.table("festivals").select("*").eq("is_active", True)
 
-        # 월별 필터: 해당 월에 진행 중인 축제 (시작일 <= 월말 AND 종료일 >= 월초)
+        result = query.order("event_start_date", desc=False).execute()
+        festivals = result.data or []
+        logger.debug(f"축제 DB 조회: {len(festivals)}건 (is_active=True)")
+
+        # 월별 필터 + 상태 계산 (Python 측에서 처리 — Supabase .or_() 중복 호출 버그 회피)
+        month_start = None
+        month_end = None
         if year and month:
             month_start = f"{year}-{month:02d}-01"
             if month == 12:
                 month_end = f"{year + 1}-01-01"
             else:
                 month_end = f"{year}-{month + 1:02d}-01"
-            query = query.or_(
-                f"event_start_date.is.null,"
-                f"event_start_date.lt.{month_end}"
-            )
-            query = query.or_(
-                f"event_end_date.is.null,"
-                f"event_end_date.gte.{month_start}"
-            )
 
-        result = query.order("event_start_date", desc=False).execute()
-        festivals = result.data or []
-
-        # 상태 계산 및 필터
         items = []
         for f in festivals:
             start = f.get("event_start_date")
             end = f.get("event_end_date")
             f_status = _compute_status(start, end, today)
             f["status"] = f_status
+
+            # 월별 필터: 해당 월에 진행 중인 축제 (시작일 < 월말 AND 종료일 >= 월초)
+            if month_start and month_end:
+                start_ok = (start is None) or (start < month_end)
+                end_ok = (end is None) or (end >= month_start)
+                if not (start_ok and end_ok):
+                    continue
 
             if status and f_status != status:
                 continue

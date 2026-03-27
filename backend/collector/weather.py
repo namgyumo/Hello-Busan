@@ -9,9 +9,20 @@ from backend.db.supabase import get_supabase
 from backend.config import settings
 from backend.regions import REGION_GRID
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_float(val, default: float = 0.0) -> float:
+    """None이나 빈 문자열에도 안전한 float 변환"""
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
 
 
 class WeatherCollector(BaseCollector):
@@ -71,34 +82,47 @@ class WeatherCollector(BaseCollector):
         """날씨 데이터 파싱 (권역 코드 포함)"""
         grouped = {}
         for item in items:
-            key = f"{item['fcstDate']}_{item['fcstTime']}"
+            fcst_date = item.get("fcstDate")
+            fcst_time = item.get("fcstTime")
+            category = item.get("category")
+            if not fcst_date or not fcst_time or not category:
+                continue
+            key = f"{fcst_date}_{fcst_time}"
             if key not in grouped:
                 grouped[key] = {
-                    "forecast_date": item["fcstDate"],
-                    "forecast_time": item["fcstTime"],
+                    "forecast_date": fcst_date,
+                    "forecast_time": fcst_time,
                 }
-            grouped[key][item["category"]] = item["fcstValue"]
+            grouped[key][category] = item.get("fcstValue")
 
         result = []
         for key, data in grouped.items():
             pty = data.get("PTY", "0")
             rain_type_map = {"0": "없음", "1": "비", "2": "비+눈", "3": "눈", "4": "소나기"}
-            pcp = data.get("PCP", "0")
+            pcp = data.get("PCP") or "0"
             rain_amount = 0.0
             if pcp and pcp not in ("강수없음", "0"):
                 try:
-                    rain_amount = float(pcp.replace("mm", "").strip())
-                except ValueError:
+                    # "1mm미만" → 0.5, "30~50mm" → 40, "50mm이상" → 50
+                    cleaned = pcp.replace("mm", "").replace("미만", "").replace("이상", "").strip()
+                    range_match = re.match(r'(\d+)~(\d+)', cleaned)
+                    if range_match:
+                        rain_amount = (float(range_match.group(1)) + float(range_match.group(2))) / 2
+                    elif cleaned:
+                        rain_amount = float(cleaned)
+                        if "미만" in pcp:
+                            rain_amount = rain_amount * 0.5
+                except (ValueError, TypeError):
                     rain_amount = 0.0
 
             weather = {
                 "region_code": region_code,
-                "temperature": float(data.get("TMP", 0)),
-                "sky_code": data.get("SKY", "1"),
+                "temperature": _safe_float(data.get("TMP"), 0.0),
+                "sky_code": data.get("SKY") or "1",
                 "rain_type": rain_type_map.get(pty, "없음"),
                 "rain_amount": rain_amount,
-                "humidity": int(float(data.get("REH", 0))),
-                "wind_speed": float(data.get("WSD", 0)),
+                "humidity": int(_safe_float(data.get("REH"), 0.0)),
+                "wind_speed": _safe_float(data.get("WSD"), 0.0),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             result.append(weather)

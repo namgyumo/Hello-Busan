@@ -35,13 +35,16 @@
     <link rel="alternate" hreflang="x-default" href="https://hellobusan.kr/">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=4">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
     <meta name="theme-color" content="#0066CC">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
+    <script>
+    (function(){try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+    </script>
 </head>
 <body class="page-home">
     <!-- Offline Banner -->
@@ -79,21 +82,49 @@
                 <span data-i18n="hero_cta">지도로 탐색하기</span>
             </a>
         </div>
-        <div class="hero__bubbles" aria-hidden="true">
-            <div class="hero__bubble"></div>
-            <div class="hero__bubble"></div>
-            <div class="hero__bubble"></div>
+        <div class="hero-slider" id="hero-slider" aria-roledescription="carousel" aria-label="부산 관광지 사진">
+            <div class="hero-slider__track" id="hero-slider-track">
+                <div class="hero-slider__slide hero-slider__slide--active" role="group" aria-roledescription="slide" aria-label="1 / 5">
+                    <img src="https://p4.wallpaperbetter.com/wallpaper/799/193/306/busan-south-korea-skyscape-building-sea-foam-hd-wallpaper-preview.jpg"
+                         alt="" data-i18n-alt="slide_alt_haeundae" class="hero-slider__img" loading="eager">
+                </div>
+                <div class="hero-slider__slide" role="group" aria-roledescription="slide" aria-label="2 / 5">
+                    <img src="https://www.visitbusan.net/uploadImgs/files/cntnts/20191227190325222_ttiel"
+                         alt="" data-i18n-alt="slide_alt_gwangan" class="hero-slider__img" loading="lazy">
+                </div>
+                <div class="hero-slider__slide" role="group" aria-roledescription="slide" aria-label="3 / 5">
+                    <img src="https://t1.daumcdn.net/cfile/tistory/240D573B57CCC73D34"
+                         alt="" data-i18n-alt="slide_alt_gamcheon" class="hero-slider__img" loading="lazy">
+                </div>
+                <div class="hero-slider__slide" role="group" aria-roledescription="slide" aria-label="4 / 5">
+                    <img src="https://i.ytimg.com/vi/fhdjiXIPwR0/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDyWCodtsHIdFOSc1mCSoyTBpks7w"
+                         alt="" data-i18n-alt="slide_alt_jagalchi" class="hero-slider__img" loading="lazy">
+                </div>
+                <div class="hero-slider__slide" role="group" aria-roledescription="slide" aria-label="5 / 5">
+                    <img src="https://www.visitbusan.net/uploadImgs/files/cntnts/20230731191152033"
+                         alt="" data-i18n-alt="slide_alt_taejongdae" class="hero-slider__img" loading="lazy">
+                </div>
+            </div>
+            <button class="hero-slider__arrow hero-slider__arrow--prev" id="hero-slider-prev" aria-label="Previous slide">&#x276E;</button>
+            <button class="hero-slider__arrow hero-slider__arrow--next" id="hero-slider-next" aria-label="Next slide">&#x276F;</button>
+            <div class="hero-slider__dots" id="hero-slider-dots" role="tablist" aria-label="Slide navigation">
+                <button class="hero-slider__dot hero-slider__dot--active" role="tab" aria-selected="true" aria-label="Slide 1" data-slide="0"></button>
+                <button class="hero-slider__dot" role="tab" aria-selected="false" aria-label="Slide 2" data-slide="1"></button>
+                <button class="hero-slider__dot" role="tab" aria-selected="false" aria-label="Slide 3" data-slide="2"></button>
+                <button class="hero-slider__dot" role="tab" aria-selected="false" aria-label="Slide 4" data-slide="3"></button>
+                <button class="hero-slider__dot" role="tab" aria-selected="false" aria-label="Slide 5" data-slide="4"></button>
+            </div>
         </div>
-        <div class="hero__ocean" aria-hidden="true">
-            <div class="hero__ocean-wave hero__ocean-wave--1"></div>
-            <div class="hero__ocean-wave hero__ocean-wave--2"></div>
+        <div class="hero__waves">
+            <svg class="hero__wave hero__wave--1" viewBox="0 0 2880 120" preserveAspectRatio="none"><path d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,80 1440,60 C1800,120 2160,0 2520,60 C2700,90 2820,80 2880,60 L2880,120 L0,120Z"/></svg>
+            <svg class="hero__wave hero__wave--2" viewBox="0 0 2880 120" preserveAspectRatio="none"><path d="M0,80 C240,20 480,100 720,60 C960,20 1200,100 1440,80 C1680,20 1920,100 2160,60 C2400,20 2640,100 2880,80 L2880,120 L0,120Z"/></svg>
+            <svg class="hero__wave hero__wave--3" viewBox="0 0 2880 120" preserveAspectRatio="none"><path d="M0,40 C180,100 540,10 720,80 C900,10 1260,100 1440,40 C1620,100 1980,10 2160,80 C2340,10 2700,100 2880,40 L2880,120 L0,120Z"/></svg>
         </div>
-        <div class="hero__wave"></div>
     </section>
 
     <!-- Weather Smart Banner -->
     <section class="weather-banner" id="weather-banner" aria-label="날씨 기반 추천" style="display:none;">
-        <a class="weather-banner__link" id="weather-banner-link" href="/map.html">
+        <a class="weather-banner__link" id="weather-banner-link" href="/weather.html">
             <div class="weather-banner__icon" id="weather-icon" aria-hidden="true"></div>
             <div class="weather-banner__content">
                 <p class="weather-banner__temp" id="weather-temp"></p>
@@ -101,6 +132,35 @@
             </div>
             <div class="weather-banner__arrow" aria-hidden="true">&#x276F;</div>
         </a>
+    </section>
+
+    <!-- Air Quality Info -->
+    <section class="air-quality" id="air-quality-section" aria-label="대기질 정보" style="display:none;">
+        <div class="air-quality__header">
+            <span class="air-quality__icon" id="aq-icon" aria-hidden="true"></span>
+            <h3 class="air-quality__title" data-i18n="air_quality_title">부산 대기질 정보</h3>
+        </div>
+        <div class="air-quality__grade-bar" id="aq-grade-bar">
+            <span class="air-quality__grade-label" id="aq-grade-label"></span>
+        </div>
+        <div class="air-quality__metrics">
+            <div class="air-quality__metric">
+                <span class="air-quality__metric-label" data-i18n="aq_pm25">PM2.5</span>
+                <span class="air-quality__metric-value" id="aq-pm25">--</span>
+            </div>
+            <div class="air-quality__metric">
+                <span class="air-quality__metric-label" data-i18n="aq_pm10">PM10</span>
+                <span class="air-quality__metric-value" id="aq-pm10">--</span>
+            </div>
+            <div class="air-quality__metric">
+                <span class="air-quality__metric-label" data-i18n="aq_cai">통합대기환경지수</span>
+                <span class="air-quality__metric-value" id="aq-cai">--</span>
+            </div>
+        </div>
+        <div class="air-quality__footer">
+            <span class="air-quality__station" id="aq-station"></span>
+            <span class="air-quality__time" id="aq-time"></span>
+        </div>
     </section>
 
     <!-- Weekly Forecast & Travel Day Recommendation -->
@@ -216,6 +276,10 @@
         <a href="/map.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
             <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/weather.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
+            <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
         </a>
         <a href="/favorites.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>

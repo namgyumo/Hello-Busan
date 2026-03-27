@@ -12,6 +12,7 @@ from backend.collector.weather import WeatherCollector
 from backend.collector.transport import TransportCollector
 from backend.collector.busan_api import BusanApiCollector
 from backend.collector.festivals import FestivalCollector
+from backend.collector.air_quality import AirQualityCollector
 from backend.services.score_calculator import ScoreCalculator
 import logging
 
@@ -30,6 +31,7 @@ class CollectorScheduler:
             "transport": TransportCollector(),
             "busan_api": BusanApiCollector(),
             "festivals": FestivalCollector(),
+            "air_quality": AirQualityCollector(),
         }
         self.score_calculator = ScoreCalculator()
         self._setup_jobs()
@@ -86,6 +88,15 @@ class CollectorScheduler:
             args=["festivals"],
             id="festivals_collector",
             name="축제/이벤트 수집",
+        )
+
+        # 대기질: 1시간마다
+        self.scheduler.add_job(
+            self._run_collector,
+            trigger=IntervalTrigger(hours=1),
+            args=["air_quality"],
+            id="air_quality_collector",
+            name="대기질 수집",
         )
 
     async def _run_collector(self, name: str):

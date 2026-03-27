@@ -22,7 +22,7 @@
     }
 
     try {
-        const res = await fetch(`/api/v1/spots/${spotId}?lang=${I18n.getLang()}`);
+        const res = await fetch(`/api/v1/spots/${encodeURIComponent(spotId)}?lang=${I18n.getLang()}`);
         const json = await res.json();
         if (!json.success || !json.data) throw new Error('데이터 없음');
 
@@ -74,7 +74,7 @@
         }
 
         // Map
-        if (spot.lat && spot.lng) {
+        if (spot.lat != null && spot.lng != null) {
             const map = L.map('detail-map').setView([spot.lat, spot.lng], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OSM',
@@ -87,7 +87,7 @@
 
         // Directions: show button and set panel data when coordinates exist
         const dirPanel = document.getElementById('directions-panel');
-        if (dirPanel && spot.lat && spot.lng) {
+        if (dirPanel && spot.lat != null && spot.lng != null) {
             dirPanel.dataset.lat = spot.lat;
             dirPanel.dataset.lng = spot.lng;
             dirPanel.dataset.spotId = spotId;
@@ -107,6 +107,12 @@
 
         // Favorite Button
         _initFavoriteBtn(spotId);
+
+        // Air Quality (야외 관광지인 경우)
+        var outdoorCategories = ['nature', 'activity', 'nightview'];
+        if (outdoorCategories.indexOf(spot.category) >= 0) {
+            _loadDetailAirQuality();
+        }
 
         // Menu (맛집 카테고리인 경우)
         if (spot.category === 'food') {
@@ -293,12 +299,84 @@
         setTimeout(() => el.classList.remove('show'), 3000);
     }
 
+    /** 대기질 데이터 로드 (야외 관광지용) */
+    var AQ_GRADE_CONFIG = {
+        1: { key: 'aq_good',     css: 'good',     icon: '\u{1F7E2}' },
+        2: { key: 'aq_moderate', css: 'moderate', icon: '\u{1F7E1}' },
+        3: { key: 'aq_bad',      css: 'bad',      icon: '\u{1F7E0}' },
+        4: { key: 'aq_very_bad', css: 'very_bad', icon: '\u{1F534}' },
+    };
+
+    async function _loadDetailAirQuality() {
+        var section = document.getElementById('detail-air-quality');
+        if (!section) return;
+
+        try {
+            var res = await fetch('/api/v1/air-quality');
+            var json = await res.json();
+            if (!json.success || !json.data || !json.data.summary) return;
+
+            var summary = json.data.summary;
+            var grade = summary.overall_grade;
+            var config = AQ_GRADE_CONFIG[grade] || AQ_GRADE_CONFIG[2];
+
+            var iconEl = document.getElementById('detail-aq-icon');
+            if (iconEl) iconEl.textContent = config.icon;
+
+            var gradeBar = document.getElementById('detail-aq-grade-bar');
+            if (gradeBar) {
+                gradeBar.className = 'air-quality__grade-bar air-quality__grade-bar--' + config.css;
+                var gradeLabel = document.getElementById('detail-aq-grade-label');
+                if (gradeLabel) gradeLabel.textContent = I18n.t(config.key);
+            }
+
+            var pm25El = document.getElementById('detail-aq-pm25');
+            if (pm25El) {
+                pm25El.textContent = summary.avg_pm25 != null
+                    ? _escapeHtml(String(summary.avg_pm25)) + ' ' + I18n.t('aq_unit_ugm3')
+                    : '--';
+            }
+
+            var pm10El = document.getElementById('detail-aq-pm10');
+            if (pm10El) {
+                pm10El.textContent = summary.avg_pm10 != null
+                    ? _escapeHtml(String(summary.avg_pm10)) + ' ' + I18n.t('aq_unit_ugm3')
+                    : '--';
+            }
+
+            var caiEl = document.getElementById('detail-aq-cai');
+            if (caiEl) {
+                caiEl.textContent = summary.avg_khai != null
+                    ? String(summary.avg_khai)
+                    : '--';
+            }
+
+            var stationEl = document.getElementById('detail-aq-station');
+            if (stationEl) {
+                stationEl.textContent = _escapeHtml(summary.city || '') +
+                    ' (' + (summary.station_count || 0) + ')';
+            }
+
+            var timeEl = document.getElementById('detail-aq-time');
+            if (timeEl && summary.timestamp) {
+                var dt = new Date(summary.timestamp);
+                var hh = String(dt.getHours()).padStart(2, '0');
+                var mm = String(dt.getMinutes()).padStart(2, '0');
+                timeEl.textContent = I18n.t('aq_updated') + ' ' + hh + ':' + mm;
+            }
+
+            section.style.display = '';
+        } catch (e) {
+            console.warn('대기질 로드 실패:', e);
+        }
+    }
+
     /** 메뉴 데이터 로드 및 렌더링 */
     let _allMenus = [];
 
     async function _loadMenu(id) {
         try {
-            const res = await fetch(`/api/v1/spots/${id}/menu?lang=${I18n.getLang()}`);
+            const res = await fetch(`/api/v1/spots/${encodeURIComponent(id)}/menu?lang=${I18n.getLang()}`);
             const json = await res.json();
             if (!json.success || !json.data || !json.data.is_restaurant) return;
 

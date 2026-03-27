@@ -72,7 +72,7 @@ const Recommend = (() => {
                         ${distText ? `<span>${distText}</span>` : ''}
                     </div>
                 </div>
-                <button class="favorite-btn favorite-btn--sm${favClass}" data-spot-id="${spot.id}" aria-label="${favLabel}" type="button">
+                <button class="favorite-btn favorite-btn--sm${favClass}" data-spot-id="${_escapeHtml(String(spot.id))}" aria-label="${favLabel}" type="button">
                     <span class="favorite-btn__icon">${favIcon}</span>
                 </button>
             `;

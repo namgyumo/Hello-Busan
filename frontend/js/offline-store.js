@@ -92,7 +92,7 @@ const OfflineStore = (() => {
 
     async function cacheSpotForFavorite(spotId, lang) {
         try {
-            const res = await fetch(`/api/v1/spots/${spotId}?lang=${lang || 'ko'}`);
+            const res = await fetch(`/api/v1/spots/${encodeURIComponent(spotId)}?lang=${lang || 'ko'}`);
             const json = await res.json();
             if (json.success && json.data) {
                 await saveSpot(json.data);

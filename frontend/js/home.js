@@ -22,6 +22,12 @@
     // 7일 예보 로드
     loadWeeklyForecast();
 
+    // 대기질 정보 로드
+    loadAirQuality();
+
+    // 히어로 배너 슬라이드 초기화
+    initHeroSlider();
+
     // 언어 변경 시 재로드
     window.addEventListener('langchange', () => {
         const langSelect = document.getElementById('lang-select');
@@ -30,6 +36,8 @@
         loadPopularSpots();
         loadWeatherBanner();
         loadWeeklyForecast();
+        loadAirQuality();
+        _applySliderAltTexts();
     });
 
     async function loadCategories() {
@@ -172,10 +180,10 @@
                 msgEl.textContent = I18n.t(config.i18nKey);
             }
 
-            // 배너 링크 → 첫 번째 추천 카테고리로 이동
+            // 배너 링크 → 날씨 전용 페이지로 이동
             const linkEl = document.getElementById('weather-banner-link');
             if (linkEl) {
-                linkEl.href = `/map.html?category=${config.categories[0]}`;
+                linkEl.href = '/weather.html';
             }
 
             // 배경 그라디언트
@@ -191,6 +199,88 @@
             });
         } catch (e) {
             console.warn('날씨 배너 로드 실패:', e);
+        }
+    }
+
+    // ─── 대기질 정보 ───
+    const AQ_GRADE_CONFIG = {
+        1: { key: 'aq_good',     css: 'good',     icon: '\u{1F7E2}' },
+        2: { key: 'aq_moderate', css: 'moderate', icon: '\u{1F7E1}' },
+        3: { key: 'aq_bad',      css: 'bad',      icon: '\u{1F7E0}' },
+        4: { key: 'aq_very_bad', css: 'very_bad', icon: '\u{1F534}' },
+    };
+
+    async function loadAirQuality() {
+        var section = document.getElementById('air-quality-section');
+        if (!section) return;
+
+        try {
+            var res = await fetch(API_BASE + '/air-quality');
+            var json = await res.json();
+            if (!json.success || !json.data || !json.data.summary) return;
+
+            var summary = json.data.summary;
+            var grade = summary.overall_grade;
+            var config = AQ_GRADE_CONFIG[grade] || AQ_GRADE_CONFIG[2];
+
+            // Icon
+            var iconEl = document.getElementById('aq-icon');
+            if (iconEl) iconEl.textContent = config.icon;
+
+            // Grade bar
+            var gradeBar = document.getElementById('aq-grade-bar');
+            if (gradeBar) {
+                gradeBar.className = 'air-quality__grade-bar air-quality__grade-bar--' + config.css;
+                var gradeLabel = document.getElementById('aq-grade-label');
+                if (gradeLabel) {
+                    gradeLabel.textContent = I18n.t(config.key);
+                }
+            }
+
+            // Metrics
+            var pm25El = document.getElementById('aq-pm25');
+            if (pm25El) {
+                pm25El.textContent = summary.avg_pm25 != null
+                    ? _escapeHtml(String(summary.avg_pm25)) + ' ' + I18n.t('aq_unit_ugm3')
+                    : '--';
+            }
+
+            var pm10El = document.getElementById('aq-pm10');
+            if (pm10El) {
+                pm10El.textContent = summary.avg_pm10 != null
+                    ? _escapeHtml(String(summary.avg_pm10)) + ' ' + I18n.t('aq_unit_ugm3')
+                    : '--';
+            }
+
+            var caiEl = document.getElementById('aq-cai');
+            if (caiEl) {
+                caiEl.textContent = summary.avg_khai != null
+                    ? String(summary.avg_khai)
+                    : '--';
+            }
+
+            // Footer
+            var stationEl = document.getElementById('aq-station');
+            if (stationEl) {
+                stationEl.textContent = _escapeHtml(summary.city || '') +
+                    ' (' + (summary.station_count || 0) + ')';
+            }
+
+            var timeEl = document.getElementById('aq-time');
+            if (timeEl && summary.timestamp) {
+                var dt = new Date(summary.timestamp);
+                var hh = String(dt.getHours()).padStart(2, '0');
+                var mm = String(dt.getMinutes()).padStart(2, '0');
+                timeEl.textContent = I18n.t('aq_updated') + ' ' + hh + ':' + mm;
+            }
+
+            // Show with animation
+            section.style.display = '';
+            requestAnimationFrame(function() {
+                section.classList.add('air-quality--visible');
+            });
+        } catch (e) {
+            console.warn('대기질 로드 실패:', e);
         }
     }
 
@@ -405,7 +495,7 @@
                 limit: '5',
                 offset: '0',
                 lang: I18n.getLang(),
-                category: categories[0],
+                categories: categories[0],
             });
             var res = await fetch(API_BASE + '/recommend?' + params);
             var json = await res.json();
@@ -445,7 +535,7 @@
     }
 
     function _weatherStatusText(skyCode, rainType) {
-        if (rainType && rainType !== '\uC5C6\uC74C' && rainType !== '0') {
+        if (rainType && rainType !== '\uC5C6\uC74C' && rainType !== '0' && rainType !== 'None') {
             if (rainType === '\uBE44') return I18n.t('weather_rain');
             if (rainType === '\uB208') return I18n.t('weather_snow');
             if (rainType.indexOf('\uBE44') >= 0 && rainType.indexOf('\uB208') >= 0) return I18n.t('weather_rain_snow');
@@ -470,5 +560,100 @@
                 c.classList.remove('forecast-card--active');
             });
         });
+    }
+
+    // ─── 히어로 배너 이미지 슬라이더 ───
+
+    function _applySliderAltTexts() {
+        document.querySelectorAll('[data-i18n-alt]').forEach(function(el) {
+            var key = el.getAttribute('data-i18n-alt');
+            var val = I18n.t(key);
+            if (val && val !== key) el.alt = val;
+        });
+    }
+
+    function initHeroSlider() {
+        var slides = document.querySelectorAll('.hero-slider__slide');
+        var dots = document.querySelectorAll('.hero-slider__dot');
+        var prevBtn = document.getElementById('hero-slider-prev');
+        var nextBtn = document.getElementById('hero-slider-next');
+        var slider = document.getElementById('hero-slider');
+        if (!slides.length || !slider) return;
+
+        var current = 0;
+        var total = slides.length;
+        var interval = null;
+        var INTERVAL_MS = 5000;
+
+        // Apply i18n alt texts on init
+        _applySliderAltTexts();
+
+        function goTo(idx) {
+            slides[current].classList.remove('hero-slider__slide--active');
+            dots[current].classList.remove('hero-slider__dot--active');
+            dots[current].setAttribute('aria-selected', 'false');
+            current = ((idx % total) + total) % total;
+            slides[current].classList.add('hero-slider__slide--active');
+            dots[current].classList.add('hero-slider__dot--active');
+            dots[current].setAttribute('aria-selected', 'true');
+        }
+
+        function next() { goTo(current + 1); }
+        function prev() { goTo(current - 1); }
+
+        function startAuto() {
+            stopAuto();
+            interval = setInterval(next, INTERVAL_MS);
+        }
+        function stopAuto() {
+            if (interval) { clearInterval(interval); interval = null; }
+        }
+
+        // Arrow buttons
+        if (nextBtn) nextBtn.addEventListener('click', function() { stopAuto(); next(); startAuto(); });
+        if (prevBtn) prevBtn.addEventListener('click', function() { stopAuto(); prev(); startAuto(); });
+
+        // Dot buttons
+        dots.forEach(function(dot) {
+            dot.addEventListener('click', function() {
+                var idx = parseInt(dot.getAttribute('data-slide'), 10);
+                if (idx !== current) { stopAuto(); goTo(idx); startAuto(); }
+            });
+        });
+
+        // Touch swipe support
+        var touchStartX = 0;
+        var touchEndX = 0;
+        var SWIPE_THRESHOLD = 50;
+
+        slider.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        slider.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            var diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > SWIPE_THRESHOLD) {
+                stopAuto();
+                if (diff > 0) next(); else prev();
+                startAuto();
+            }
+        }, { passive: true });
+
+        // Pause on hover / focus
+        slider.addEventListener('mouseenter', stopAuto);
+        slider.addEventListener('mouseleave', startAuto);
+        slider.addEventListener('focusin', stopAuto);
+        slider.addEventListener('focusout', startAuto);
+
+        // Pause when page is not visible
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) stopAuto(); else startAuto();
+        });
+
+        // Respect reduced motion
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        startAuto();
     }
 })();

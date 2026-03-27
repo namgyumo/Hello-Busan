@@ -9,7 +9,7 @@ const SSE = (() => {
     function connect() {
         if (eventSource) eventSource.close();
 
-        eventSource = new EventSource('/api/v1/events');
+        eventSource = new EventSource('/api/v1/events/stream');
 
         eventSource.addEventListener('comfort_update', (e) => {
             try {

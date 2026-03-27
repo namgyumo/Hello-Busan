@@ -6,7 +6,7 @@
  *   - Stale While Revalidate: tourist spot images
  */
 
-const CACHE_VERSION = 'hello-busan-v2';
+const CACHE_VERSION = 'hello-busan-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -18,8 +18,9 @@ const STATIC_ASSETS = [
     '/detail.html',
     '/favorites.html',
     '/offline.html',
+    '/weather.html',
     '/manifest.json',
-    '/css/style.css',
+    '/css/style.css?v=4',
     '/js/i18n.js',
     '/js/theme.js',
     '/js/home.js',
@@ -39,6 +40,7 @@ const STATIC_ASSETS = [
     '/js/course.js',
     '/js/directions.js',
     '/js/festivals.js',
+    '/js/weather-page.js',
     '/icons/icon-192x192.svg',
     '/icons/icon-512x512.svg',
     '/locales/ko.json',
@@ -92,13 +94,19 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // HTML pages (navigation): Network First — always get latest from server
+    if (request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
+        event.respondWith(networkFirst(request, STATIC_CACHE));
+        return;
+    }
+
     // External image URLs or common image extensions: Stale While Revalidate
     if (isImageRequest(request, url)) {
         event.respondWith(staleWhileRevalidate(request, IMAGE_CACHE));
         return;
     }
 
-    // Static assets: Cache First
+    // Other static assets (CSS, JS, icons, locales): Cache First
     event.respondWith(cacheFirst(request, STATIC_CACHE));
 });
 
@@ -142,6 +150,11 @@ async function networkFirst(request, cacheName) {
     } catch (err) {
         const cached = await caches.match(request);
         if (cached) return cached;
+        // HTML navigation fallback to offline page
+        if (request.mode === 'navigate') {
+            const offlinePage = await caches.match('/offline.html');
+            if (offlinePage) return offlinePage;
+        }
         return new Response(
             JSON.stringify({ success: false, error: 'offline' }),
             { status: 503, headers: { 'Content-Type': 'application/json' } }

@@ -323,7 +323,7 @@ const CourseModule = (() => {
                 </div>
             `;
             card.addEventListener('click', () => {
-                if (spot.lat && spot.lng) {
+                if (spot.lat != null && spot.lng != null) {
                     const map = MapModule.getMap();
                     if (map) map.setView([spot.lat, spot.lng], 15);
                 }

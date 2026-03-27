@@ -35,11 +35,11 @@ async def get_current_weather():
 
         if result.data and len(result.data) > 0:
             row = result.data[0]
-            sky_code = str(row.get("sky_code", "1"))
-            rain_type = row.get("rain_type", "없음")
-            temperature = row.get("temperature", 0)
-            humidity = row.get("humidity", 0)
-            wind_speed = row.get("wind_speed", 0)
+            sky_code = str(row.get("sky_code") or "1")
+            rain_type = row.get("rain_type") or "없음"
+            temperature = row.get("temperature") if row.get("temperature") is not None else 0
+            humidity = row.get("humidity") if row.get("humidity") is not None else 0
+            wind_speed = row.get("wind_speed") if row.get("wind_speed") is not None else 0
 
             # 날씨 상태 판별
             condition = _determine_condition(sky_code, rain_type, temperature)

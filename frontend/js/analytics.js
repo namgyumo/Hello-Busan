@@ -49,6 +49,7 @@ const Analytics = (() => {
         if (typeof text !== 'string') return text;
         let result = text;
         PII_PATTERNS.forEach(function (pattern) {
+            pattern.lastIndex = 0;
             result = result.replace(pattern, '[REDACTED]');
         });
         return result;

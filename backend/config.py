@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     CACHE_TTL_CROWD: int = 300       # 5분
     CACHE_TTL_WEATHER: int = 1800    # 30분
     CACHE_TTL_SPOTS: int = 86400     # 24시간
+    CACHE_TTL_AIR_QUALITY: int = 3600  # 1시간
 
     # ML
     MODEL_PATH: str = "ml_data/model.joblib"
