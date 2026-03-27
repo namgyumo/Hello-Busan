@@ -2,6 +2,7 @@
 관광지 정보 수집기
 - 한국관광공사 TourAPI 4.0
 - 관광지 기본정보, 이미지, 카테고리 수집
+- nightview 카테고리 자동 분류 (부산 야경 명소)
 """
 from typing import Dict, List, Optional
 from backend.collector.base import BaseCollector
@@ -10,6 +11,17 @@ from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
+
+# 부산 야경 명소 키워드 — 관광지명에 포함되면 nightview로 재분류
+NIGHTVIEW_KEYWORDS = [
+    "광안대교", "금빛노을브릿지", "더베이101", "마린시티",
+    "달맞이", "송도해상케이블카", "부산타워",
+]
+# 관광지명 정확 매칭으로 nightview 분류
+NIGHTVIEW_EXACT_NAMES = {
+    "광안리해수욕장", "광안리해변 테마거리", "민락해변공원",
+    "동백공원", "부네치아 선셋 전망대",
+}
 
 # 부산 지역코드
 BUSAN_AREA_CODE = "6"
@@ -196,17 +208,17 @@ class TourismCollector(BaseCollector):
             try:
                 sb.table("tourist_spots").upsert(
                     {
-                        "external_id": spot["external_id"],
-                        "name": spot["name"],
-                        "category_id": spot["category_id"],
-                        "address": spot["address"],
+                        "external_id": spot["external_id"][:50],
+                        "name": spot["name"][:200],
+                        "category_id": spot["category_id"][:20],
+                        "address": (spot.get("address") or "")[:300],
                         "lat": spot["lat"],
                         "lng": spot["lng"],
-                        "images": spot["images"],
-                        "phone": spot["phone"],
-                        "description": spot.get("description", ""),
-                        "operating_hours": spot.get("operating_hours", ""),
-                        "admission_fee": spot.get("admission_fee", ""),
+                        "images": spot.get("images", []),
+                        "phone": (spot.get("phone") or "")[:20],
+                        "description": spot.get("description") or "",
+                        "operating_hours": (spot.get("operating_hours") or "")[:200],
+                        "admission_fee": (spot.get("admission_fee") or "")[:100],
                         "is_active": True,
                     },
                     on_conflict="external_id",
@@ -215,4 +227,41 @@ class TourismCollector(BaseCollector):
             except Exception as e:
                 logger.error(f"저장 실패 [{spot.get('name')}]: {e}")
 
+        # 저장 후 nightview 카테고리 자동 분류
+        await self.seed_nightview()
+
         return saved
+
+    async def seed_nightview(self) -> int:
+        """
+        부산 야경 명소를 nightview 카테고리로 재분류.
+        TourAPI에는 nightview 타입이 없으므로 키워드/이름 기반으로 분류.
+        """
+        sb = get_supabase()
+        updated = 0
+
+        try:
+            result = sb.table("tourist_spots").select("id, name, category_id").eq("is_active", True).execute()
+            spots = result.data or []
+
+            for spot in spots:
+                name = spot.get("name", "")
+                if spot.get("category_id") == "nightview":
+                    continue  # 이미 분류됨
+
+                is_nightview = name in NIGHTVIEW_EXACT_NAMES or any(
+                    kw in name for kw in NIGHTVIEW_KEYWORDS
+                )
+                if is_nightview:
+                    sb.table("tourist_spots").update(
+                        {"category_id": "nightview"}
+                    ).eq("id", spot["id"]).execute()
+                    updated += 1
+                    logger.info(f"nightview 분류: {name}")
+
+            if updated:
+                logger.info(f"nightview {updated}건 재분류 완료")
+        except Exception as e:
+            logger.error(f"nightview 시딩 실패: {e}")
+
+        return updated

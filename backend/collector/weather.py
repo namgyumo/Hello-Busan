@@ -1,24 +1,21 @@
 """
 기상 데이터 수집기
 - 기상청 단기예보 API
-- 부산 지역 날씨 정보
+- 부산 5개 권역별 날씨 정보
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from backend.collector.base import BaseCollector
 from backend.db.supabase import get_supabase
 from backend.config import settings
+from backend.regions import REGION_GRID
 import logging
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
-# 부산 관측 지점 (해운대)
-BUSAN_NX = 98
-BUSAN_NY = 76
-
 
 class WeatherCollector(BaseCollector):
-    """기상청 날씨 수집기"""
+    """기상청 날씨 수집기 (부산 5개 권역)"""
 
     def __init__(self):
         super().__init__(
@@ -27,28 +24,34 @@ class WeatherCollector(BaseCollector):
         )
 
     async def collect(self) -> List[Dict]:
-        """단기예보 수집"""
+        """5개 권역별 단기예보 수집"""
         now = datetime.now()
         base_date = now.strftime("%Y%m%d")
         base_time = self._get_base_time(now)
 
-        params = {
-            "numOfRows": "100",
-            "pageNo": "1",
-            "dataType": "JSON",
-            "base_date": base_date,
-            "base_time": base_time,
-            "nx": BUSAN_NX,
-            "ny": BUSAN_NY,
-        }
+        all_weather: List[Dict] = []
 
-        body = await self.fetch("/getVilageFcst", params=params)
-        if not body:
-            return []
+        for region_code, grid in REGION_GRID.items():
+            params = {
+                "numOfRows": "100",
+                "pageNo": "1",
+                "dataType": "JSON",
+                "base_date": base_date,
+                "base_time": base_time,
+                "nx": grid["nx"],
+                "ny": grid["ny"],
+            }
 
-        items = body.get("items", {}).get("item", [])
-        weather_data = self._parse_weather(items)
-        return weather_data
+            body = await self.fetch("/getVilageFcst", params=params)
+            if not body:
+                logger.warning(f"날씨 수집 실패: {region_code}")
+                continue
+
+            items = body.get("items", {}).get("item", [])
+            weather_data = self._parse_weather(items, region_code)
+            all_weather.extend(weather_data)
+
+        return all_weather
 
     def _get_base_time(self, now: datetime) -> str:
         """가장 최근 발표 시각"""
@@ -60,8 +63,8 @@ class WeatherCollector(BaseCollector):
                 return bt
         return "2300"
 
-    def _parse_weather(self, items: list) -> List[Dict]:
-        """날씨 데이터 파싱"""
+    def _parse_weather(self, items: list, region_code: str = "haeundae") -> List[Dict]:
+        """날씨 데이터 파싱 (권역 코드 포함)"""
         grouped = {}
         for item in items:
             key = f"{item['fcstDate']}_{item['fcstTime']}"
@@ -85,7 +88,7 @@ class WeatherCollector(BaseCollector):
                     rain_amount = 0.0
 
             weather = {
-                "region_code": "haeundae",
+                "region_code": region_code,
                 "temperature": float(data.get("TMP", 0)),
                 "sky_code": data.get("SKY", "1"),
                 "rain_type": rain_type_map.get(pty, "없음"),

@@ -85,7 +85,7 @@ class CrowdCollector(BaseCollector):
 
     def _estimate_crowd(self, spot: Dict, now: datetime) -> Dict:
         """
-        혼잡도 추정 (시간 + 요일 + 시즌 + 카테고리 종합)
+        혼잡도 추정 (시간 + 요일 + 시즌 + 카테고리 + 장소 특성 종합)
         crowd_level: 0.0(여유) ~ 1.0(매우혼잡)
         """
         hour = now.hour
@@ -110,6 +110,12 @@ class CrowdCollector(BaseCollector):
 
         # 종합 계산
         crowd_level = base * day_mult * season_mult * cat_mult
+
+        # 장소별 고유 변동 (spot_id 기반 결정적 오프셋으로 다양성 확보)
+        spot_id = spot.get("id", 0)
+        spot_hash = hash(str(spot_id)) % 1000 / 1000.0  # 0.0~0.999
+        spot_offset = (spot_hash - 0.5) * 0.3  # -0.15 ~ +0.15
+        crowd_level += spot_offset
 
         # 0~1 범위로 클램핑
         crowd_level = max(0.0, min(1.0, crowd_level))

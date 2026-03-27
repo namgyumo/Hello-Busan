@@ -93,7 +93,8 @@ class BaseCollector(ABC):
         """공공데이터포털 공통 응답 파싱"""
         try:
             header = data.get("response", {}).get("header", {})
-            if header.get("resultCode") != "0000":
+            result_code = header.get("resultCode", "")
+            if result_code not in ("0000", "00"):
                 logger.warning(f"API 응답 에러: {header.get('resultMsg')}")
                 return None
             return data["response"]["body"]

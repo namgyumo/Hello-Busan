@@ -34,18 +34,38 @@ async def get_spots(
     lng: Optional[float] = Query(None, ge=124.0, le=132.0, description="경도"),
     radius: int = Query(10, ge=1, le=50, description="반경(km)"),
     category: Optional[str] = Query(None, description="카테고리 ID (콤마 구분 복수)"),
+    search: Optional[str] = Query(None, description="검색어 (이름/주소)"),
     lang: str = Query("ko", description="언어 코드"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
     """[API-001] 위치 기반 관광지 목록 조회"""
-    cache_key = f"spots:{lat}:{lng}:{radius}:{category}:{lang}:{limit}:{offset}"
+    cache_key = f"spots:{lat}:{lng}:{radius}:{category}:{search}:{lang}:{limit}:{offset}"
     cached = await cache.get(cache_key)
     if cached:
         return cached
 
     try:
         sb = get_supabase()
+
+        # 총 개수를 위한 별도 count 쿼리
+        count_query = sb.table("tourist_spots").select("id", count="exact").eq("is_active", True)
+        if category:
+            categories = [c.strip() for c in category.split(",")]
+            if len(categories) == 1:
+                count_query = count_query.eq("category_id", categories[0])
+            else:
+                count_query = count_query.in_("category_id", categories)
+        if search and search.strip():
+            keyword = search.strip()
+            count_query = count_query.or_(
+                f"name.ilike.%{keyword}%,name_en.ilike.%{keyword}%,address.ilike.%{keyword}%"
+            )
+
+        count_result = count_query.execute()
+        total_count = count_result.count if hasattr(count_result, 'count') and count_result.count is not None else len(count_result.data or [])
+
+        # 실제 데이터 조회
         query = sb.table("tourist_spots").select("*").eq("is_active", True)
 
         if category:
@@ -55,13 +75,23 @@ async def get_spots(
             else:
                 query = query.in_("category_id", categories)
 
-        result = query.range(offset, offset + limit - 1).execute()
-        spots_data = result.data or []
+        if search and search.strip():
+            keyword = search.strip()
+            query = query.or_(
+                f"name.ilike.%{keyword}%,name_en.ilike.%{keyword}%,address.ilike.%{keyword}%"
+            )
 
-        # 위치 기반 필터링 + 거리 계산
+        # 위치 기반인 경우 전체 조회 후 필터링, 아닌 경우 페이지네이션 적용
         if lat and lng:
+            result = query.execute()
+            spots_data = result.data or []
             spots_data = location_service.filter_by_radius(spots_data, lat, lng, radius)
             spots_data = location_service.sort_by_distance(spots_data, lat, lng)
+            total_count = len(spots_data)
+            spots_data = spots_data[offset:offset + limit]
+        else:
+            result = query.range(offset, offset + limit).execute()
+            spots_data = result.data or []
 
         # 쾌적함 지수 병합
         spot_ids = [s.get("id") for s in spots_data if s.get("id")]
@@ -87,7 +117,7 @@ async def get_spots(
         response = SuccessResponse(
             data=items,
             meta=Meta(
-                total=len(items),
+                total=total_count,
                 limit=limit,
                 offset=offset,
                 fallback_used=False,
@@ -107,22 +137,41 @@ async def get_categories(lang: str = Query("ko")):
     """[API-003] 카테고리 목록 조회"""
     try:
         sb = get_supabase()
+
+        # 카테고리별 관광지 수 집계 (개별 count 쿼리 — 1000행 제한 회피)
+        count_map = {}
+        for cat_id in CATEGORY_MAP:
+            count_result = (
+                sb.table("tourist_spots")
+                .select("id", count="exact")
+                .eq("is_active", True)
+                .eq("category_id", cat_id)
+                .execute()
+            )
+            count_map[cat_id] = (
+                count_result.count
+                if hasattr(count_result, "count") and count_result.count is not None
+                else len(count_result.data or [])
+            )
+
+        # DB 카테고리 테이블 조회 시도
         result = sb.table("categories").select("*").order("sort_order").execute()
 
         items = []
         for cat in (result.data or []):
             name_key = f"name_{lang}" if lang != "ko" else "name_ko"
+            cat_id = cat.get("id", "")
             items.append({
-                "id": cat.get("id"),
+                "id": cat_id,
                 "name": cat.get(name_key) or cat.get("name_ko", ""),
                 "icon": cat.get("icon", ""),
-                "spot_count": 0,
+                "spot_count": count_map.get(cat_id, 0),
             })
 
-        # spot_count 빈 경우 카테고리 맵에서 폴백
+        # DB 카테고리가 없으면 정적 맵에서 생성
         if not items:
             items = [
-                {"id": k, "name": v["name"], "icon": v["icon"], "spot_count": 0}
+                {"id": k, "name": v["name"], "icon": v["icon"], "spot_count": count_map.get(k, 0)}
                 for k, v in CATEGORY_MAP.items()
             ]
 
@@ -130,7 +179,6 @@ async def get_categories(lang: str = Query("ko")):
 
     except Exception as e:
         logger.error(f"카테고리 조회 실패: {e}")
-        # DB 미연결 시 정적 카테고리 반환
         items = [
             {"id": k, "name": v["name"], "icon": v["icon"], "spot_count": 0}
             for k, v in CATEGORY_MAP.items()

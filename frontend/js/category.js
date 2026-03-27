@@ -40,13 +40,31 @@ const Category = (() => {
                 }
             }
 
+            if (typeof Analytics !== 'undefined' && cat !== '') {
+                Analytics.trackCategoryClick(cat);
+            }
             if (onChange) onChange(selectedCategories);
         });
+    }
+
+    function select(category) {
+        const bar = document.getElementById('category-bar');
+        if (!bar) return;
+
+        const chip = bar.querySelector(`[data-category="${category}"]`);
+        if (!chip) return;
+
+        const allChip = bar.querySelector('[data-category=""]');
+        if (allChip) allChip.classList.remove('active');
+
+        selectedCategories = [category];
+        bar.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
     }
 
     function getSelected() {
         return selectedCategories;
     }
 
-    return { init, getSelected };
+    return { init, select, getSelected };
 })();

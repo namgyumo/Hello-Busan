@@ -7,6 +7,7 @@ from backend.collector.tourism import TourismCollector
 from backend.collector.crowd import CrowdCollector
 from backend.collector.weather import WeatherCollector
 from backend.collector.transport import TransportCollector
+from backend.collector.busan_api import BusanApiCollector
 from backend.collector.scheduler import CollectorScheduler
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "CrowdCollector",
     "WeatherCollector",
     "TransportCollector",
+    "BusanApiCollector",
     "CollectorScheduler",
 ]

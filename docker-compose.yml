@@ -14,6 +14,7 @@ services:
       - APP_ENV=production
       - PYTHONUNBUFFERED=1
     volumes:
+      - ./backend:/app/backend
       - ./ml_data:/app/ml_data
       - ./frontend:/app/frontend
       - ./logs:/app/logs
@@ -27,9 +28,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1800M
+          memory: 2048M
         reservations:
-          memory: 800M
+          memory: 1024M
     logging:
       driver: "json-file"
       options:

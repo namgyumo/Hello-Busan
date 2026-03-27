@@ -28,12 +28,13 @@ async def get_recommendations(
     lat: Optional[float] = Query(None, ge=33.0, le=38.0),
     lng: Optional[float] = Query(None, ge=124.0, le=132.0),
     categories: Optional[str] = Query(None, description="카테고리 ID (콤마 구분)"),
+    search: Optional[str] = Query(None, description="검색어 (이름/주소)"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     lang: str = Query("ko"),
 ):
     """[API-004] XGBoost 기반 관광지 추천"""
-    cache_key = f"recommend:{lat}:{lng}:{categories}:{limit}:{offset}:{lang}"
+    cache_key = f"recommend:{lat}:{lng}:{categories}:{search}:{limit}:{offset}:{lang}"
     cached = await cache.get(cache_key)
     if cached:
         return cached
@@ -51,6 +52,12 @@ async def get_recommendations(
                 query = query.eq("category_id", cat_list[0])
             else:
                 query = query.in_("category_id", cat_list)
+
+        if search and search.strip():
+            keyword = search.strip()
+            query = query.or_(
+                f"name.ilike.%{keyword}%,name_en.ilike.%{keyword}%,address.ilike.%{keyword}%"
+            )
 
         spots_result = query.execute()
         spots = spots_result.data or []

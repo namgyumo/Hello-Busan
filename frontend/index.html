@@ -5,73 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hello, Busan! — 부산 관광지 스마트 추천</title>
     <meta name="description" content="실시간 혼잡도와 AI 추천으로 쾌적한 부산 여행을 즐기세요">
+
+    <!-- OG Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Hello, Busan! — 부산 관광지 스마트 추천">
+    <meta property="og:description" content="실시간 혼잡도와 AI 추천으로 쾌적한 부산 여행을 즐기세요">
+    <meta property="og:url" content="https://hellobusan.kr/">
+    <meta property="og:image" content="https://hellobusan.kr/images/og-home.png">
+    <meta property="og:site_name" content="Hello, Busan!">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:locale:alternate" content="ja_JP">
+    <meta property="og:locale:alternate" content="zh_CN">
+    <meta property="og:locale:alternate" content="ru_RU">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Hello, Busan! — 부산 관광지 스마트 추천">
+    <meta name="twitter:description" content="실시간 혼잡도와 AI 추천으로 쾌적한 부산 여행을 즐기세요">
+    <meta name="twitter:image" content="https://hellobusan.kr/images/og-home.png">
+
+    <!-- SEO: hreflang & canonical -->
+    <link rel="canonical" href="https://hellobusan.kr/">
+    <link rel="alternate" hreflang="ko" href="https://hellobusan.kr/?lang=ko">
+    <link rel="alternate" hreflang="en" href="https://hellobusan.kr/?lang=en">
+    <link rel="alternate" hreflang="ja" href="https://hellobusan.kr/?lang=ja">
+    <link rel="alternate" hreflang="zh" href="https://hellobusan.kr/?lang=zh">
+    <link rel="alternate" hreflang="ru" href="https://hellobusan.kr/?lang=ru">
+    <link rel="alternate" hreflang="x-default" href="https://hellobusan.kr/">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/stitch.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <meta name="theme-color" content="#0066CC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
 </head>
-<body>
+<body class="page-home">
+    <!-- Offline Banner -->
+    <div class="offline-banner" id="offline-banner" role="alert">
+        <span class="offline-banner__icon" aria-hidden="true">&#x1F4F5;</span>
+        <span data-i18n="offline_banner">오프라인 모드 - 저장된 데이터를 표시합니다</span>
+    </div>
+
+    <a href="#main-content" class="skip-link">본문으로 건너뛰기</a>
+
     <!-- Header -->
-    <header class="header">
-        <a href="/" class="header__logo">Hello, Busan!</a>
+    <header class="header" role="banner">
+        <a href="/" class="header__logo" aria-label="Hello, Busan! 홈으로">Hello, Busan!</a>
         <div class="header__actions">
-            <select id="lang-select" class="lang-select" aria-label="언어 선택">
+            <button id="theme-toggle" class="theme-toggle" aria-label="다크모드 전환">
+                <span class="theme-toggle__icon" aria-hidden="true">&#x2600;</span>
+            </button>
+            <select id="lang-select" class="lang-select" aria-label="Language">
                 <option value="ko">한국어</option>
                 <option value="en">English</option>
                 <option value="ja">日本語</option>
                 <option value="zh">中文</option>
                 <option value="ru">Русский</option>
             </select>
-            <button id="btn-location" class="btn-icon" aria-label="현재 위치">📍</button>
         </div>
     </header>
 
-    <!-- Category Filter -->
-    <nav class="category-bar" id="category-bar" aria-label="카테고리 필터">
-        <button class="category-chip active" data-category="">전체</button>
-        <button class="category-chip" data-category="nature">🏔 자연/경관</button>
-        <button class="category-chip" data-category="culture">🏛 문화/역사</button>
-        <button class="category-chip" data-category="food">🍜 맛집/카페</button>
-        <button class="category-chip" data-category="activity">🏄 액티비티</button>
-        <button class="category-chip" data-category="shopping">🛍 쇼핑</button>
-        <button class="category-chip" data-category="nightview">🌙 야경</button>
+    <!-- Hero Section -->
+    <section class="hero" id="main-content">
+        <div class="hero__content">
+            <h1 class="hero__title">부산의 모든 관광지를<br>한눈에</h1>
+            <p class="hero__subtitle" data-i18n="hero_subtitle">실시간 쾌적도 기반으로 가장 좋은 여행지를 추천합니다</p>
+            <a href="/map.html" class="hero__cta">
+                <span class="hero__cta-icon">&#x1F5FA;</span>
+                <span data-i18n="hero_cta">지도로 탐색하기</span>
+            </a>
+        </div>
+        <div class="hero__bubbles" aria-hidden="true">
+            <div class="hero__bubble"></div>
+            <div class="hero__bubble"></div>
+            <div class="hero__bubble"></div>
+        </div>
+        <div class="hero__ocean" aria-hidden="true">
+            <div class="hero__ocean-wave hero__ocean-wave--1"></div>
+            <div class="hero__ocean-wave hero__ocean-wave--2"></div>
+        </div>
+        <div class="hero__wave"></div>
+    </section>
+
+    <!-- Weather Smart Banner -->
+    <section class="weather-banner" id="weather-banner" aria-label="날씨 기반 추천" style="display:none;">
+        <a class="weather-banner__link" id="weather-banner-link" href="/map.html">
+            <div class="weather-banner__icon" id="weather-icon" aria-hidden="true"></div>
+            <div class="weather-banner__content">
+                <p class="weather-banner__temp" id="weather-temp"></p>
+                <p class="weather-banner__message" id="weather-message" data-i18n=""></p>
+            </div>
+            <div class="weather-banner__arrow" aria-hidden="true">&#x276F;</div>
+        </a>
+    </section>
+
+    <!-- Categories -->
+    <section class="home-section" aria-labelledby="section-categories">
+        <h2 class="home-section__title" id="section-categories" data-i18n="home_categories">테마별 관광지</h2>
+        <div class="category-grid" id="category-grid">
+            <a href="/map.html?category=nature" class="cat-card cat-card--nature">
+                <span class="cat-card__icon">&#x1F3D4;</span>
+                <span class="cat-card__name" data-i18n="category_nature">자연/경관</span>
+                <span class="cat-card__count" id="count-nature">-</span>
+            </a>
+            <a href="/map.html?category=culture" class="cat-card cat-card--culture">
+                <span class="cat-card__icon">&#x1F3DB;</span>
+                <span class="cat-card__name" data-i18n="category_culture">문화/역사</span>
+                <span class="cat-card__count" id="count-culture">-</span>
+            </a>
+            <a href="/map.html?category=food" class="cat-card cat-card--food">
+                <span class="cat-card__icon">&#x1F35C;</span>
+                <span class="cat-card__name" data-i18n="category_food">맛집/카페</span>
+                <span class="cat-card__count" id="count-food">-</span>
+            </a>
+            <a href="/map.html?category=activity" class="cat-card cat-card--activity">
+                <span class="cat-card__icon">&#x1F3C4;</span>
+                <span class="cat-card__name" data-i18n="category_activity">액티비티</span>
+                <span class="cat-card__count" id="count-activity">-</span>
+            </a>
+            <a href="/map.html?category=shopping" class="cat-card cat-card--shopping">
+                <span class="cat-card__icon">&#x1F6CD;</span>
+                <span class="cat-card__name" data-i18n="category_shopping">쇼핑</span>
+                <span class="cat-card__count" id="count-shopping">-</span>
+            </a>
+            <a href="/map.html?category=nightview" class="cat-card cat-card--nightview">
+                <span class="cat-card__icon">&#x1F319;</span>
+                <span class="cat-card__name" data-i18n="category_nightview">야경</span>
+                <span class="cat-card__count" id="count-nightview">-</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Popular Spots -->
+    <section class="home-section" aria-labelledby="section-popular">
+        <div class="home-section__header">
+            <h2 class="home-section__title" id="section-popular" data-i18n="home_popular">지금 가장 쾌적한 곳</h2>
+            <a href="/map.html" class="home-section__more" data-i18n="load_more">더 보기 &rarr;</a>
+        </div>
+        <div class="popular-list" id="popular-list">
+            <div class="skeleton skeleton-popular"></div>
+            <div class="skeleton skeleton-popular"></div>
+            <div class="skeleton skeleton-popular"></div>
+        </div>
+    </section>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" role="navigation" aria-label="메인 메뉴">
+        <a href="/" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F3E0;</span>
+            <span class="bottom-nav__label" data-i18n="nav_home">홈</span>
+        </a>
+        <a href="/map.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
+            <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/favorites.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
+            <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
+        </a>
     </nav>
 
-    <!-- Fallback Banner -->
-    <div id="fallback-banner" class="fallback-banner">데이터가 최신이 아닐 수 있습니다</div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <!-- Main Content -->
-    <main class="main-layout">
-        <div class="map-container">
-            <div id="map"></div>
-            <button id="btn-heatmap-toggle" class="map-toggle">히트맵 ON</button>
-        </div>
-
-        <div class="spot-list-container">
-            <div class="spot-list-header">
-                <h2 class="spot-list-title" data-i18n="nav_recommend">추천 관광지</h2>
-                <p class="spot-list-desc" data-i18n="recommend_desc">선호하는 테마를 바탕으로 추천합니다</p>
-            </div>
-            <div id="spot-list" class="spot-list">
-                <div class="skeleton skeleton-card"></div>
-                <div class="skeleton skeleton-card"></div>
-                <div class="skeleton skeleton-card"></div>
-                <div class="skeleton skeleton-card"></div>
-            </div>
-            <button id="btn-more" class="btn-more" style="display:none" data-i18n="load_more">더 보기</button>
-            <div id="sse-status" class="sse-status" data-i18n="sse_connected">실시간 쾌적함 지수(SSE) 연동 중</div>
-        </div>
-    </main>
-
-    <div id="toast" class="toast"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="/js/analytics.js"></script>
     <script src="/js/i18n.js"></script>
-    <script src="/js/map.js"></script>
-    <script src="/js/category.js"></script>
-    <script src="/js/recommend.js"></script>
-    <script src="/js/sse.js"></script>
-    <script src="/js/app.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/pwa.js"></script>
+    <script src="/js/favorites.js"></script>
+    <script src="/js/offline-store.js"></script>
+    <script src="/js/home.js"></script>
+
+    <!-- SW Update Toast -->
+    <div class="sw-update-toast" id="sw-update-toast" role="alert">
+        <span data-i18n="update_available">새 버전이 있습니다</span>
+        <button class="sw-update-toast__btn" id="sw-update-btn" data-i18n="update_refresh">새로고침</button>
+    </div>
+
+    <!-- Service Worker Registration & Offline Detection -->
+    <script>
+    (function() {
+        // Offline detection
+        function updateOnlineStatus() {
+            if (!navigator.onLine) {
+                document.body.classList.add('is-offline');
+            } else {
+                document.body.classList.remove('is-offline');
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+
+        // IndexedDB favorites sync
+        if (typeof OfflineStore !== 'undefined') {
+            OfflineStore.initFavoritesSync();
+        }
+
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                reg.addEventListener('updatefound', function() {
+                    var newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', function() {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            var toast = document.getElementById('sw-update-toast');
+                            if (toast) toast.classList.add('visible');
+                            var btn = document.getElementById('sw-update-btn');
+                            if (btn) {
+                                btn.addEventListener('click', function() {
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                    window.location.reload();
+                                });
+                            }
+                        }
+                    });
+                });
+            }).catch(function(err) {
+                console.warn('SW registration failed:', err);
+            });
+        }
+    })();
+    </script>
 </body>
 </html>

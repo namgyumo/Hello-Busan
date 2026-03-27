@@ -10,6 +10,7 @@ from backend.collector.tourism import TourismCollector
 from backend.collector.crowd import CrowdCollector
 from backend.collector.weather import WeatherCollector
 from backend.collector.transport import TransportCollector
+from backend.collector.busan_api import BusanApiCollector
 from backend.services.score_calculator import ScoreCalculator
 import logging
 
@@ -26,6 +27,7 @@ class CollectorScheduler:
             "crowd": CrowdCollector(),
             "weather": WeatherCollector(),
             "transport": TransportCollector(),
+            "busan_api": BusanApiCollector(),
         }
         self.score_calculator = ScoreCalculator()
         self._setup_jobs()
@@ -39,6 +41,15 @@ class CollectorScheduler:
             args=["tourism"],
             id="tourism_collector",
             name="관광지 정보 수집",
+        )
+
+        # 부산시 공공데이터 API: 매일 1회
+        self.scheduler.add_job(
+            self._run_collector,
+            trigger=IntervalTrigger(hours=24),
+            args=["busan_api"],
+            id="busan_api_collector",
+            name="부산시 공공데이터 API 수집",
         )
 
         # 혼잡도: 10분마다 → 수집 후 comfort_scores 재계산
@@ -169,6 +180,13 @@ class CollectorScheduler:
         for name, collector in self.collectors.items():
             logger.info(f"즉시 수집: {name}")
             results[name] = await collector.run()
+
+        # nightview 카테고리 시딩 (tourism 수집 후에도 재확인)
+        try:
+            nightview_count = await self.collectors["tourism"].seed_nightview()
+            results["nightview_seed"] = {"updated": nightview_count}
+        except Exception as e:
+            logger.error(f"nightview 시딩 실패: {e}")
 
         # 전체 수집 후 comfort_scores 계산
         updated = await self.score_calculator.calculate_all()

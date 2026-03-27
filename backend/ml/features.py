@@ -33,7 +33,8 @@ class FeatureBuilder:
         "culture": 1,
         "food": 2,
         "activity": 3,
-        "nightlife": 4,
+        "shopping": 4,
+        "nightview": 5,
     }
 
     def build_batch(

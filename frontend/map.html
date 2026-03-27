@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지도 탐색 — Hello, Busan!</title>
+    <meta name="description" content="부산 관광지를 지도에서 탐색하고 실시간 쾌적도를 확인하세요">
+
+    <!-- OG Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="지도 탐색 — Hello, Busan!">
+    <meta property="og:description" content="부산 관광지를 지도에서 탐색하고 실시간 쾌적도를 확인하세요">
+    <meta property="og:url" content="https://hellobusan.kr/map.html">
+    <meta property="og:image" content="https://hellobusan.kr/images/og-map.png">
+    <meta property="og:site_name" content="Hello, Busan!">
+    <meta property="og:locale" content="ko_KR">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:locale:alternate" content="ja_JP">
+    <meta property="og:locale:alternate" content="zh_CN">
+    <meta property="og:locale:alternate" content="ru_RU">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="지도 탐색 — Hello, Busan!">
+    <meta name="twitter:description" content="부산 관광지를 지도에서 탐색하고 실시간 쾌적도를 확인하세요">
+    <meta name="twitter:image" content="https://hellobusan.kr/images/og-map.png">
+
+    <!-- SEO: hreflang & canonical -->
+    <link rel="canonical" href="https://hellobusan.kr/map.html">
+    <link rel="alternate" hreflang="ko" href="https://hellobusan.kr/map.html?lang=ko">
+    <link rel="alternate" hreflang="en" href="https://hellobusan.kr/map.html?lang=en">
+    <link rel="alternate" hreflang="ja" href="https://hellobusan.kr/map.html?lang=ja">
+    <link rel="alternate" hreflang="zh" href="https://hellobusan.kr/map.html?lang=zh">
+    <link rel="alternate" hreflang="ru" href="https://hellobusan.kr/map.html?lang=ru">
+    <link rel="alternate" hreflang="x-default" href="https://hellobusan.kr/map.html">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <meta name="theme-color" content="#0066CC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+</head>
+<body class="page-map">
+    <!-- Offline Banner -->
+    <div class="offline-banner" id="offline-banner" role="alert">
+        <span class="offline-banner__icon" aria-hidden="true">&#x1F4F5;</span>
+        <span data-i18n="offline_banner">오프라인 모드 - 저장된 데이터를 표시합니다</span>
+    </div>
+
+    <a href="#map" class="skip-link">지도로 건너뛰기</a>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <a href="/" class="header__logo" aria-label="Hello, Busan! 홈으로">Hello, Busan!</a>
+        <div class="header__actions">
+            <button id="theme-toggle" class="theme-toggle" aria-label="다크모드 전환">
+                <span class="theme-toggle__icon" aria-hidden="true">&#x2600;</span>
+            </button>
+            <select id="lang-select" class="lang-select" aria-label="Language">
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+                <option value="ru">Русский</option>
+            </select>
+            <button id="btn-location" class="btn-icon" aria-label="현재 위치">&#x1F4CD;</button>
+        </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div class="search-bar" id="search-bar">
+        <span class="search-bar__icon" aria-hidden="true">&#x1F50D;</span>
+        <input
+            type="text"
+            id="search-input"
+            class="search-bar__input"
+            data-i18n-placeholder="search_placeholder"
+            placeholder="관광지를 검색하세요..."
+            autocomplete="off"
+        >
+        <button id="search-clear" class="search-bar__clear" aria-label="검색어 지우기" style="display:none">&times;</button>
+    </div>
+
+    <!-- Category Filter -->
+    <nav class="category-bar" id="category-bar" aria-label="카테고리 필터">
+        <button class="category-chip active" data-category="">전체</button>
+        <button class="category-chip" data-category="nature">&#x1F3D4; 자연</button>
+        <button class="category-chip" data-category="culture">&#x1F3DB; 문화</button>
+        <button class="category-chip" data-category="food">&#x1F35C; 맛집</button>
+        <button class="category-chip" data-category="activity">&#x1F3C4; 액티비티</button>
+        <button class="category-chip" data-category="shopping">&#x1F6CD; 쇼핑</button>
+        <button class="category-chip" data-category="nightview">&#x1F319; 야경</button>
+    </nav>
+
+    <!-- Fallback Banner -->
+    <div id="fallback-banner" class="fallback-banner" data-i18n="fallback_banner">데이터가 최신이 아닐 수 있습니다</div>
+
+    <!-- Main Content -->
+    <main class="main-layout">
+        <div class="map-container">
+            <div id="map"></div>
+            <button id="btn-heatmap-toggle" class="map-toggle" data-i18n="heatmap_on">히트맵 ON</button>
+            <button id="btn-course" class="map-toggle course-btn" data-i18n="course_create">코스 만들기</button>
+            <div id="course-map-notice" class="course-map-notice" style="display:none"></div>
+        </div>
+
+        <!-- Mobile Map/List Toggle -->
+        <div class="map-list-handle" id="map-list-handle" aria-label="지도/리스트 전환">
+            <div class="map-list-handle__bar"></div>
+            <div class="map-list-handle__tabs">
+                <button class="map-list-handle__tab active" data-view="default" data-i18n="view_split">기본</button>
+                <button class="map-list-handle__tab" data-view="map" data-i18n="nav_map">지도</button>
+                <button class="map-list-handle__tab" data-view="list" data-i18n="nav_recommend">리스트</button>
+            </div>
+        </div>
+
+        <div class="spot-list-container">
+            <div class="spot-list-header">
+                <h2 class="spot-list-title" data-i18n="nav_recommend">추천 관광지</h2>
+                <p class="spot-list-desc" data-i18n="recommend_desc">선호하는 테마를 바탕으로 추천합니다</p>
+            </div>
+            <div id="spot-list" class="spot-list">
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+            </div>
+            <button id="btn-more" class="btn-more" style="display:none" data-i18n="load_more">더 보기</button>
+            <div id="sse-status" class="sse-status" data-i18n="sse_connected">실시간 쾌적함 지수(SSE) 연동 중</div>
+        </div>
+    </main>
+
+    <!-- Course Planner Panel -->
+    <aside id="course-panel" class="course-panel" aria-label="코스 플래너">
+        <div class="course-panel__header">
+            <h3 class="course-panel__title" data-i18n="course_create">코스 만들기</h3>
+            <button id="course-panel-close" class="course-panel__close" aria-label="닫기">&times;</button>
+        </div>
+        <div class="course-panel__body">
+            <!-- Settings -->
+            <div id="course-settings">
+                <div class="course-field">
+                    <label class="course-field__label" data-i18n="course_duration">소요 시간</label>
+                    <div class="course-radio-group">
+                        <label class="course-radio">
+                            <input type="radio" name="course-duration" value="half" checked>
+                            <span data-i18n="course_half_day">반나절 (3~4시간)</span>
+                        </label>
+                        <label class="course-radio">
+                            <input type="radio" name="course-duration" value="full">
+                            <span data-i18n="course_full_day">하루 (6~8시간)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="course-field">
+                    <label class="course-field__label" data-i18n="course_start_location">출발지</label>
+                    <div class="course-radio-group">
+                        <label class="course-radio">
+                            <input type="radio" name="course-start" value="default" checked>
+                            <span data-i18n="course_start_default">부산역</span>
+                        </label>
+                        <label class="course-radio">
+                            <input type="radio" name="course-start" value="current">
+                            <span data-i18n="course_start_current">현재 위치</span>
+                        </label>
+                        <label class="course-radio">
+                            <input type="radio" name="course-start" value="map">
+                            <span data-i18n="course_start_map">지도에서 선택</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="course-field">
+                    <label class="course-field__label" data-i18n="course_categories">선호 카테고리</label>
+                    <div class="course-cat-group">
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="nature"><span>&#x1F3D4; 자연</span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="culture"><span>&#x1F3DB; 문화</span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="food"><span>&#x1F35C; 맛집</span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="activity"><span>&#x1F3C4; 액티비티</span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="shopping"><span>&#x1F6CD; 쇼핑</span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="nightview"><span>&#x1F319; 야경</span></label>
+                    </div>
+                </div>
+
+                <div class="course-field">
+                    <label class="course-field__label" data-i18n="course_max_spots">최대 관광지 수</label>
+                    <input type="number" id="course-max-spots" class="course-input" value="5" min="2" max="10">
+                </div>
+
+                <button id="course-generate-btn" class="course-action-btn course-action-btn--primary" data-i18n="course_generate">코스 생성</button>
+            </div>
+
+            <!-- Result -->
+            <div id="course-result" style="display:none">
+                <div id="course-summary" class="course-summary"></div>
+                <div id="course-list" class="course-list"></div>
+                <div class="course-actions">
+                    <button id="course-regen-btn" class="course-action-btn course-action-btn--secondary" data-i18n="course_regenerate">다시 생성</button>
+                    <button id="course-reset-btn" class="course-action-btn course-action-btn--outline" data-i18n="course_reset">코스 초기화</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" role="navigation" aria-label="메인 메뉴">
+        <a href="/" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F3E0;</span>
+            <span class="bottom-nav__label" data-i18n="nav_home">홈</span>
+        </a>
+        <a href="/map.html" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
+            <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/favorites.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
+            <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
+        </a>
+    </nav>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="/js/analytics.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/pwa.js"></script>
+    <script src="/js/favorites.js"></script>
+    <script src="/js/offline-store.js"></script>
+    <script src="/js/map.js"></script>
+    <script src="/js/category.js"></script>
+    <script src="/js/recommend.js"></script>
+    <script src="/js/sse.js"></script>
+    <script src="/js/search.js"></script>
+    <script src="/js/course.js"></script>
+    <script src="/js/app.js"></script>
+
+    <!-- SW Update Toast -->
+    <div class="sw-update-toast" id="sw-update-toast" role="alert">
+        <span data-i18n="update_available">새 버전이 있습니다</span>
+        <button class="sw-update-toast__btn" id="sw-update-btn" data-i18n="update_refresh">새로고침</button>
+    </div>
+
+    <!-- Service Worker Registration & Offline Detection -->
+    <script>
+    (function() {
+        // Offline detection
+        function updateOnlineStatus() {
+            if (!navigator.onLine) {
+                document.body.classList.add('is-offline');
+            } else {
+                document.body.classList.remove('is-offline');
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+
+        // IndexedDB favorites sync
+        if (typeof OfflineStore !== 'undefined') {
+            OfflineStore.initFavoritesSync();
+        }
+
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                reg.addEventListener('updatefound', function() {
+                    var newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', function() {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            var toast = document.getElementById('sw-update-toast');
+                            if (toast) toast.classList.add('visible');
+                            var btn = document.getElementById('sw-update-btn');
+                            if (btn) {
+                                btn.addEventListener('click', function() {
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                    window.location.reload();
+                                });
+                            }
+                        }
+                    });
+                });
+            }).catch(function(err) {
+                console.warn('SW registration failed:', err);
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

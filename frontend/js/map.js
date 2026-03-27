@@ -18,6 +18,18 @@ const MapModule = (() => {
 
         markerLayer = L.layerGroup().addTo(map);
 
+        // 지도 이동 시 행동 로그 수집 (디바운스)
+        let mapMoveTimer = null;
+        map.on('moveend', () => {
+            if (mapMoveTimer) clearTimeout(mapMoveTimer);
+            mapMoveTimer = setTimeout(() => {
+                if (typeof Analytics !== 'undefined') {
+                    var center = map.getCenter();
+                    Analytics.trackMapMove(center, map.getZoom());
+                }
+            }, 1000);
+        });
+
         // 히트맵 토글 버튼
         const toggleBtn = document.getElementById('btn-heatmap-toggle');
         if (toggleBtn) {

@@ -1,5 +1,5 @@
 /**
- * app.js — 메인 오케스트레이터
+ * app.js — 지도+추천 페이지 오케스트레이터
  */
 (async () => {
     const API_BASE = '/api/v1';
@@ -8,18 +8,17 @@
     let currentOffset = 0;
     let loading = false;
 
-    // 1) i18n 초기화
+    // 0) 행동 로그 수집 초기화
+    if (typeof Analytics !== 'undefined') Analytics.init();
+
+    // 1) i18n 초기화 (init이 lang-select 리스너도 등록)
     await I18n.init();
-    const langSelect = document.getElementById('lang-select');
-    if (langSelect) {
-        langSelect.value = I18n.getLang();
-        langSelect.addEventListener('change', () => {
-            I18n.setLang(langSelect.value);
-        });
-    }
 
     // 2) 지도 초기화
     MapModule.init();
+
+    // 2.5) 코스 플래너 초기화
+    if (typeof CourseModule !== 'undefined') CourseModule.init();
 
     // 3) 카테고리 필터 초기화
     Category.init(() => {
@@ -27,16 +26,29 @@
         loadSpots(false);
     });
 
-    // 4) 초기 데이터 로드
+    // 3.5) 검색 초기화
+    Search.init(() => {
+        currentOffset = 0;
+        loadSpots(false);
+    });
+
+    // 4) URL 파라미터로 카테고리 자동 선택
+    const urlParams = new URLSearchParams(window.location.search);
+    const initCategory = urlParams.get('category');
+    if (initCategory) {
+        Category.select(initCategory);
+    }
+
+    // 5) 초기 데이터 로드
     await loadSpots(false);
     loadHeatmap();
 
-    // 5) SSE 연결
+    // 6) SSE 연결
     SSE.on('comfort_update', (data) => {
         if (data && data.spots) {
             MapModule.updateMarkers(data.spots);
         }
-        showToast('쾌적도가 업데이트되었습니다');
+        showToast(I18n.t('comfort_updated'));
     });
 
     SSE.on('heatmap_update', (data) => {
@@ -47,21 +59,45 @@
 
     SSE.connect();
 
-    // 6) 위치 버튼
+    // 7) 위치 버튼
     const btnLocation = document.getElementById('btn-location');
     if (btnLocation) {
         btnLocation.addEventListener('click', requestLocation);
     }
 
-    // 7) 더 보기 버튼
+    // 8) 더 보기 버튼
     const btnMore = document.getElementById('btn-more');
     if (btnMore) {
         btnMore.addEventListener('click', () => loadSpots(true));
     }
 
-    // 8) 언어 변경 시 재로드
+    // 9) Mobile map/list toggle
+    const handleEl = document.getElementById('map-list-handle');
+    if (handleEl) {
+        handleEl.addEventListener('click', (e) => {
+            const tab = e.target.closest('.map-list-handle__tab');
+            if (!tab) return;
+            const view = tab.dataset.view;
+            const layout = document.querySelector('.main-layout');
+            if (!layout) return;
+
+            layout.classList.remove('view--map', 'view--list');
+            if (view === 'map') layout.classList.add('view--map');
+            else if (view === 'list') layout.classList.add('view--list');
+
+            handleEl.querySelectorAll('.map-list-handle__tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Invalidate map size after transition
+            setTimeout(() => {
+                const map = MapModule.getMap();
+                if (map) map.invalidateSize();
+            }, 350);
+        });
+    }
+
+    // 10) 언어 변경 시 재로드
     window.addEventListener('langchange', () => {
-        if (langSelect) langSelect.value = I18n.getLang();
         currentOffset = 0;
         loadSpots(false);
         loadHeatmap();
@@ -80,7 +116,8 @@
 
         try {
             const categories = Category.getSelected();
-            const json = await Recommend.fetchSpots(userLat, userLng, categories, currentOffset);
+            const searchQuery = Search.getQuery();
+            const json = await Recommend.fetchSpots(userLat, userLng, categories, currentOffset, searchQuery);
 
             if (!json.success) {
                 showFallback();
@@ -121,7 +158,7 @@
 
     function requestLocation() {
         if (!navigator.geolocation) {
-            showToast('위치 서비스를 사용할 수 없습니다');
+            showToast(I18n.t('location_unavailable'));
             return;
         }
 
@@ -139,7 +176,7 @@
             },
             (err) => {
                 console.warn('위치 오류:', err);
-                showToast('위치를 가져올 수 없습니다');
+                showToast(I18n.t('location_error'));
                 if (btn) btn.disabled = false;
             },
             { enableHighAccuracy: true, timeout: 10000 }

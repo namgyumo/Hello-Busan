@@ -35,10 +35,21 @@ const I18n = (() => {
             const key = el.getAttribute('data-i18n');
             if (translations[key]) el.textContent = translations[key];
         });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (translations[key]) el.placeholder = translations[key];
+        });
         document.documentElement.lang = currentLang;
     }
 
     function getLang() { return currentLang; }
+
+    async function setLang(lang) {
+        if (!SUPPORTED.includes(lang)) lang = DEFAULT;
+        localStorage.setItem('lang', lang);
+        await load(lang);
+        window.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
+    }
 
     async function init() {
         const saved = localStorage.getItem('lang');
@@ -49,12 +60,10 @@ const I18n = (() => {
         if (select) {
             select.value = currentLang;
             select.addEventListener('change', async (e) => {
-                localStorage.setItem('lang', e.target.value);
-                await load(e.target.value);
-                window.dispatchEvent(new CustomEvent('langchange', { detail: { lang: e.target.value } }));
+                await setLang(e.target.value);
             });
         }
     }
 
-    return { init, t, getLang, load };
+    return { init, t, getLang, setLang, load };
 })();

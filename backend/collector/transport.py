@@ -22,17 +22,22 @@ class TransportCollector(BaseCollector):
             base_url="http://apis.data.go.kr",
         )
 
+    # 1회 수집 시 최대 API 호출 수 (일일 1000건 예산 내 관리)
+    MAX_SPOTS_PER_RUN = 50
+
     async def collect(self) -> List[Dict]:
-        """교통 데이터 수집"""
+        """교통 데이터 수집 (API 호출 예산 관리 위해 배치 제한)"""
         spots = await self._get_spot_list()
+        # 전체 spots 중 MAX_SPOTS_PER_RUN만큼만 처리 (라운드 로빈)
+        batch = spots[:self.MAX_SPOTS_PER_RUN]
         transport_data = []
 
-        for spot in spots:
+        for spot in batch:
             data = await self._collect_nearby_transport(spot)
             if data:
                 transport_data.append(data)
 
-        logger.info(f"교통 데이터 {len(transport_data)}건 수집")
+        logger.info(f"교통 데이터 {len(transport_data)}/{len(spots)}건 수집 (배치 {len(batch)})")
         return transport_data
 
     async def _get_spot_list(self) -> List[Dict]:
@@ -56,23 +61,26 @@ class TransportCollector(BaseCollector):
             params=params,
         )
 
+        # API 응답이 없으면 (403 등) 해당 spot은 건너뛰기
+        if not body:
+            return None
+
+        items_wrapper = body.get("items", {})
+        items = items_wrapper.get("item", []) if isinstance(items_wrapper, dict) else []
+        if not isinstance(items, list):
+            items = [items] if isinstance(items, dict) else []
+
         stations = []
         nearest_station = None
-        if body:
-            items_wrapper = body.get("items", {})
-            items = items_wrapper.get("item", []) if isinstance(items_wrapper, dict) else []
-            if not isinstance(items, list):
-                items = [items] if isinstance(items, dict) else []
+        for item in items:
+            stations.append({
+                "name": item.get("nodenm", ""),
+                "id": item.get("nodeid", ""),
+                "distance": item.get("dist", 0),
+            })
 
-            for item in items:
-                stations.append({
-                    "name": item.get("nodenm", ""),
-                    "id": item.get("nodeid", ""),
-                    "distance": item.get("dist", 0),
-                })
-
-            if stations:
-                nearest_station = stations[0].get("name", "")
+        if stations:
+            nearest_station = stations[0].get("name", "")
 
         transit_score = self._calc_accessibility(stations)
 

@@ -102,11 +102,17 @@ def create_app() -> FastAPI:
     from backend.api.recommend import router as recommend_router
     from backend.api.comfort import router as comfort_router
     from backend.api.events import router as events_router
+    from backend.api.weather import router as weather_router
+    from backend.api.analytics import router as analytics_router
+    from backend.api.course import router as course_router
 
     app.include_router(spots_router)
     app.include_router(recommend_router)
     app.include_router(comfort_router)
     app.include_router(events_router)
+    app.include_router(weather_router)
+    app.include_router(analytics_router)
+    app.include_router(course_router)
 
     # 프론트엔드 정적 파일 서빙
     frontend_dir = Path(__file__).parent.parent / "frontend"
@@ -114,18 +120,35 @@ def create_app() -> FastAPI:
         app.mount("/css", StaticFiles(directory=frontend_dir / "css"), name="css")
         app.mount("/js", StaticFiles(directory=frontend_dir / "js"), name="js")
         app.mount("/locales", StaticFiles(directory=frontend_dir / "locales"), name="locales")
+        app.mount("/icons", StaticFiles(directory=frontend_dir / "icons"), name="icons")
+
+    @app.get("/manifest.json")
+    async def manifest():
+        """PWA manifest"""
+        manifest_path = frontend_dir / "manifest.json"
+        if manifest_path.exists():
+            return FileResponse(manifest_path, media_type="application/manifest+json")
+        return {"error": "manifest not found"}
 
     @app.get("/")
     async def index():
-        """메인 페이지"""
+        """메인 페이지 (랜딩)"""
         index_path = frontend_dir / "index.html"
         if index_path.exists():
             return FileResponse(index_path)
         return {"service": "Hello-Busan", "docs": "/docs"}
 
+    @app.get("/map.html")
+    async def map_page():
+        """지도 + 추천 페이지"""
+        map_path = frontend_dir / "map.html"
+        if map_path.exists():
+            return FileResponse(map_path)
+        return {"error": "page not found"}
+
     @app.get("/detail.html")
     async def detail():
-        """상세 페이지"""
+        """관광지 상세 페이지"""
         detail_path = frontend_dir / "detail.html"
         if detail_path.exists():
             return FileResponse(detail_path)
@@ -146,6 +169,74 @@ def create_app() -> FastAPI:
                     **cache.get_stats(),
                 },
             },
+        }
+
+    @app.post("/api/v1/admin/seed-nightview")
+    async def seed_nightview():
+        """야경 명소 카테고리 시딩 + comfort 재계산"""
+        from backend.collector.tourism import TourismCollector
+        from backend.services.score_calculator import ScoreCalculator
+
+        tc = TourismCollector()
+        updated = await tc.seed_nightview()
+
+        sc = ScoreCalculator()
+        recalced = await sc.calculate_all()
+
+        await cache.clear()
+
+        return {
+            "nightview_updated": updated,
+            "comfort_recalculated": recalced,
+        }
+
+    @app.post("/api/v1/admin/recollect")
+    async def recollect():
+        """혼잡도 재수집 + comfort 재계산 (관리용)"""
+        from backend.collector.crowd import CrowdCollector
+        from backend.services.score_calculator import ScoreCalculator
+
+        cc = CrowdCollector()
+        crowd_result = await cc.run()
+
+        sc = ScoreCalculator()
+        recalced = await sc.calculate_all()
+
+        await cache.clear()
+
+        return {
+            "crowd": crowd_result,
+            "comfort_recalculated": recalced,
+        }
+
+    @app.post("/api/v1/admin/collect-busan")
+    async def collect_busan():
+        """부산시 공공데이터 6종 수집 (관리용)"""
+        from backend.collector.busan_api import BusanApiCollector
+        from backend.collector.tourism import TourismCollector
+        from backend.collector.crowd import CrowdCollector
+        from backend.services.score_calculator import ScoreCalculator
+
+        bc = BusanApiCollector()
+        result = await bc.run()
+
+        # nightview 재분류 + comfort 재계산
+        tc = TourismCollector()
+        nightview = await tc.seed_nightview()
+
+        cc = CrowdCollector()
+        crowd = await cc.run()
+
+        sc = ScoreCalculator()
+        recalced = await sc.calculate_all()
+
+        await cache.clear()
+
+        return {
+            "busan_api": result,
+            "nightview_updated": nightview,
+            "crowd_recollected": crowd.get("saved", 0),
+            "comfort_recalculated": recalced,
         }
 
     return app

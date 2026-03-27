@@ -3,10 +3,12 @@
 - crowd_data + weather_data + transport_data → comfort_scores
 - 스케줄러에서 주기적 호출 (혼잡도 수집 직후)
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from backend.db.supabase import get_supabase
 from backend.services.comfort import ComfortService, COMFORT_WEIGHTS, _get_grade
+from backend.regions import REGION_GRID
 from datetime import datetime
+import math
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,10 +24,10 @@ class ScoreCalculator:
         """
         sb = get_supabase()
 
-        # 1) 활성 관광지 목록
+        # 1) 활성 관광지 목록 (좌표 + region_code 포함)
         spots = (
             sb.table("tourist_spots")
-            .select("id")
+            .select("id, lat, lng, region_code")
             .eq("is_active", True)
             .execute()
         )
@@ -36,8 +38,8 @@ class ScoreCalculator:
         # 2) 최신 혼잡도 데이터 조회
         crowd_map = await self._get_latest_crowd()
 
-        # 3) 최신 날씨 데이터 조회
-        weather = await self._get_latest_weather()
+        # 3) 최신 날씨 데이터 조회 (권역별)
+        weather_map = await self._get_latest_weather()
 
         # 4) 교통 접근성 데이터 조회
         transport_map = await self._get_transport_scores()
@@ -53,10 +55,15 @@ class ScoreCalculator:
             crowd_ratio = crowd_map.get(spot_id, {}).get("crowd_ratio", 50.0)
             crowd_score = int(max(0, 100 - crowd_ratio))
 
-            # 날씨 점수 (온도+습도+강수 기반)
+            # 날씨 점수 (관광지 위치 기반 가장 가까운 권역 매칭)
+            spot_lat = float(spot.get("lat", 0))
+            spot_lng = float(spot.get("lng", 0))
+            spot_region = spot.get("region_code")
+            region = spot_region if spot_region in weather_map else self._find_nearest_region(spot_lat, spot_lng)
+            weather = weather_map.get(region, {})
             weather_score = self._calc_weather_score(weather)
 
-            # 교통 점수 (transit_score: 이미 0~100)
+            # 교통 점수 (transit_score: 이미 0~100, 데이터 없으면 중립값 50)
             transport_score = transport_map.get(spot_id, {}).get("transit_score", 50)
 
             # 종합 쾌적도 점수
@@ -112,31 +119,36 @@ class ScoreCalculator:
             logger.error(f"혼잡도 조회 실패: {e}")
             return {}
 
-    async def _get_latest_weather(self) -> Dict:
-        """최신 날씨 데이터 (부산 전체 공통 1건)"""
+    async def _get_latest_weather(self) -> Dict[str, Dict]:
+        """최신 날씨 데이터 (권역별 최신 1건씩)"""
         sb = get_supabase()
         try:
             result = (
                 sb.table("weather_data")
                 .select("*")
                 .order("timestamp", desc=True)
-                .limit(1)
                 .execute()
             )
-            if result.data:
-                return result.data[0]
-            return {}
+            weather_map: Dict[str, Dict] = {}
+            for row in (result.data or []):
+                rc = row.get("region_code", "")
+                if rc and rc not in weather_map:
+                    weather_map[rc] = row
+            return weather_map
         except Exception as e:
             logger.error(f"날씨 조회 실패: {e}")
             return {}
 
     async def _get_transport_scores(self) -> Dict[str, Dict]:
-        """교통 접근성 데이터 (spot_id → {transit_score})"""
+        """교통 접근성 데이터 (spot_id → {transit_score})
+        transit_score=0은 API 실패로 인한 무효 데이터이므로 제외
+        """
         sb = get_supabase()
         try:
             result = (
                 sb.table("transport_data")
                 .select("spot_id, transit_score")
+                .gt("transit_score", 0)
                 .order("timestamp", desc=True)
                 .execute()
             )
@@ -149,6 +161,25 @@ class ScoreCalculator:
         except Exception as e:
             logger.error(f"교통 조회 실패: {e}")
             return {}
+
+    @staticmethod
+    def _find_nearest_region(lat: float, lng: float) -> str:
+        """관광지 좌표로 가장 가까운 권역 코드 반환"""
+        if not lat or not lng:
+            return "haeundae"  # 기본값
+
+        best_region = "haeundae"
+        best_dist = float("inf")
+
+        for region_code, info in REGION_GRID.items():
+            dlat = lat - info["lat"]
+            dlng = lng - info["lng"]
+            dist = math.sqrt(dlat * dlat + dlng * dlng)
+            if dist < best_dist:
+                best_dist = dist
+                best_region = region_code
+
+        return best_region
 
     def _calc_weather_score(self, weather: Dict) -> int:
         """

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오프라인 — Hello, Busan!</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .offline-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            padding: 2rem;
+            text-align: center;
+        }
+        .offline-page__icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.7;
+        }
+        .offline-page__title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 0.75rem;
+        }
+        .offline-page__desc {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 2rem;
+            max-width: 360px;
+            line-height: 1.6;
+        }
+        .offline-page__btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--color-primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+        .offline-page__btn:hover {
+            background: var(--color-primary-dark);
+        }
+        .offline-page__favorites {
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .offline-page__favorites-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 0.75rem;
+        }
+        .offline-page__fav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .offline-page__fav-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.5rem;
+            color: var(--color-text);
+            text-decoration: none;
+            transition: background var(--transition);
+        }
+        .offline-page__fav-item:hover {
+            background: var(--color-primary-light);
+        }
+    </style>
+</head>
+<body>
+    <header class="header" role="banner">
+        <a href="/" class="header__logo" aria-label="Hello, Busan! 홈으로">Hello, Busan!</a>
+    </header>
+
+    <main class="offline-page">
+        <div class="offline-page__icon" aria-hidden="true">&#x1F4F5;</div>
+        <h1 class="offline-page__title" data-i18n="offline_title">오프라인 상태입니다</h1>
+        <p class="offline-page__desc" data-i18n="offline_desc">인터넷 연결이 없습니다. 저장된 즐겨찾기 관광지는 아래에서 확인할 수 있습니다.</p>
+        <button class="offline-page__btn" onclick="window.location.reload()">
+            <span aria-hidden="true">&#x1F504;</span>
+            <span data-i18n="offline_retry">다시 시도</span>
+        </button>
+
+        <div class="offline-page__favorites" id="offline-favorites" style="display:none">
+            <h2 class="offline-page__favorites-title" data-i18n="offline_favorites">저장된 즐겨찾기</h2>
+            <ul class="offline-page__fav-list" id="offline-fav-list"></ul>
+        </div>
+    </main>
+
+    <script src="/js/i18n.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/offline-store.js"></script>
+    <script>
+        (async () => {
+            try { await I18n.init(); } catch(e) {}
+
+            try {
+                const spots = await OfflineStore.getAllSpots();
+                if (spots.length > 0) {
+                    const section = document.getElementById('offline-favorites');
+                    const list = document.getElementById('offline-fav-list');
+                    section.style.display = '';
+                    spots.forEach(spot => {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'offline-page__fav-item';
+                        a.href = '/detail.html?id=' + spot.id;
+                        a.textContent = spot.name || ('Spot #' + spot.id);
+                        li.appendChild(a);
+                        list.appendChild(li);
+                    });
+                }
+            } catch(e) {
+                console.warn('Offline favorites load failed:', e);
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -79,35 +79,33 @@ class ComfortService:
             return None
 
     async def get_bulk_comfort(self, spot_ids: List[str]) -> Dict[str, Dict]:
-        """여러 관광지 쾌적함 지수 일괄 조회"""
+        """여러 관광지 쾌적함 지수 일괄 조회 (단일 쿼리)"""
         if not spot_ids:
             return {}
 
         try:
             sb = get_supabase()
-            result = {}
 
-            # 각 관광지의 최신 쾌적함 지수 조회
-            for spot_id in spot_ids:
-                comfort = (
-                    sb.table("comfort_scores")
-                    .select("*")
-                    .eq("spot_id", spot_id)
-                    .order("timestamp", desc=True)
-                    .limit(1)
-                    .execute()
-                )
-                if comfort.data:
-                    data = comfort.data[0]
-                    score = data.get("total_score", 0)
-                    result[str(spot_id)] = {
-                        "total_score": score,
-                        "grade": _get_grade(score),
-                        "weather_score": data.get("weather_score"),
-                        "crowd_score": data.get("crowd_score"),
-                        "transport_score": data.get("transport_score"),
-                        "crowd_level": data.get("grade", "보통"),
-                    }
+            # spot_id 기준 upsert 테이블이므로 in_ 쿼리로 한 번에 조회
+            comfort = (
+                sb.table("comfort_scores")
+                .select("*")
+                .in_("spot_id", spot_ids)
+                .execute()
+            )
+
+            result = {}
+            for data in (comfort.data or []):
+                sid = str(data.get("spot_id", ""))
+                score = data.get("total_score", 0)
+                result[sid] = {
+                    "total_score": score,
+                    "grade": _get_grade(score),
+                    "weather_score": data.get("weather_score"),
+                    "crowd_score": data.get("crowd_score"),
+                    "transport_score": data.get("transport_score"),
+                    "crowd_level": data.get("grade", "보통"),
+                }
 
             return result
 
