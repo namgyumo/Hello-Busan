@@ -7,6 +7,7 @@
     let userLng = null;
     let currentOffset = 0;
     let loading = false;
+    let pendingLoad = null;
 
     // 0) 행동 로그 수집 초기화
     if (typeof Analytics !== 'undefined') Analytics.init();
@@ -122,8 +123,13 @@
     // ── 함수 정의 ──
 
     async function loadSpots(append) {
-        if (loading) return;
+        if (loading) {
+            // 로딩 중 새 요청이 들어오면 대기열에 저장 (검색/필터 변경 시)
+            if (!append) pendingLoad = false;
+            return;
+        }
         loading = true;
+        pendingLoad = null;
 
         if (!append) {
             Recommend.showSkeleton();
@@ -133,15 +139,16 @@
         try {
             const categories = Category.getSelected();
             const searchQuery = Search.getQuery();
-            const json = await Recommend.fetchSpots(userLat, userLng, categories, currentOffset, searchQuery);
+            const res = await Recommend.fetchSpots(userLat, userLng, categories, currentOffset, searchQuery);
 
-            if (!json.success) {
+            // HTTP 에러 응답도 올바르게 처리
+            if (!res || !res.success) {
                 showFallback();
-                Recommend.renderList([], false);
+                if (!append) Recommend.renderList([], false);
                 return;
             }
 
-            const items = json.data || [];
+            const items = res.data || [];
             Recommend.renderList(items, append);
             MapModule.updateMarkers(items);
 
@@ -162,6 +169,12 @@
             if (!append) Recommend.renderList([], false);
         } finally {
             loading = false;
+            // 대기 중인 요청이 있으면 실행
+            if (pendingLoad !== null) {
+                const nextAppend = pendingLoad;
+                pendingLoad = null;
+                loadSpots(nextAppend);
+            }
         }
     }
 

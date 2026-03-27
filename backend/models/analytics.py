@@ -17,6 +17,7 @@ class EventType(str, Enum):
     DETAIL_LEAVE = "detail_leave"
     SHARE = "share"
     FAVORITE = "favorite"
+    IMPRESSION = "impression"
 
 
 # 개인정보 패턴 (전화번호, 이메일)

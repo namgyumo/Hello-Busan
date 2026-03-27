@@ -65,6 +65,7 @@ class TourismCollector(BaseCollector):
                         detail = await self.collect_detail(cid)
                         if detail:
                             spot["description"] = detail.get("description", "")
+                            spot["readcount"] = detail.get("readcount", 0)
 
                         intro = await self.collect_intro(cid, content_type_id)
                         if intro:
@@ -156,6 +157,7 @@ class TourismCollector(BaseCollector):
         return {
             "description": item.get("overview", ""),
             "homepage": item.get("homepage", ""),
+            "readcount": int(item.get("readcount", 0) or 0),
         }
 
     async def collect_intro(self, content_id: str, content_type_id: str) -> Optional[Dict]:

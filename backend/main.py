@@ -296,6 +296,27 @@ def create_app() -> FastAPI:
             "comfort_recalculated": recalced,
         }
 
+    @app.post("/api/v1/admin/train-model")
+    async def train_model(request: Request):
+        """XGBoost 모델 학습 트리거 (관리용)
+
+        engagement_score 기반 학습 파이프라인 실행.
+        user_events 데이터 부족 시 proxy label 폴백 사용.
+        학습 완료 후 모델 자동 리로드.
+        """
+        _verify_admin(request)
+        from backend.ml.trainer import ModelTrainer
+
+        trainer = ModelTrainer()
+        result = await trainer.run_pipeline()
+
+        # 학습 성공 시 글로벌 모델 인스턴스 리로드
+        if result.get("status") == "success":
+            model.reload()
+            await cache.clear()
+
+        return result
+
     return app
 
 

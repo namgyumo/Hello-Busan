@@ -10,6 +10,7 @@ from backend.cache.manager import CacheManager
 from backend.services.comfort import ComfortService
 from backend.services.location import LocationService
 from backend.collector.tourism import TourismCollector
+from backend.ml.similarity import SimilarityEngine
 from datetime import datetime
 import logging
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 cache = CacheManager()
 comfort_service = ComfortService()
 location_service = LocationService()
+similarity_engine = SimilarityEngine()
 
 
 def _sanitize_keyword(raw: str) -> str:
@@ -77,9 +79,8 @@ async def get_spots(
         if search and search.strip():
             keyword = _sanitize_keyword(search)
             if keyword:
-                count_query = count_query.or_(
-                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%"
-                )
+                or_filter = f"(name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%)"
+                count_query.params = count_query.params.add("or", or_filter)
 
         count_result = count_query.execute()
         total_count = count_result.count if hasattr(count_result, 'count') and count_result.count is not None else len(count_result.data or [])
@@ -97,9 +98,8 @@ async def get_spots(
         if search and search.strip():
             keyword = _sanitize_keyword(search)
             if keyword:
-                query = query.or_(
-                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%"
-                )
+                or_filter = f"(name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%)"
+                query.params = query.params.add("or", or_filter)
 
         # 위치 기반인 경우 전체 조회 후 필터링, 아닌 경우 페이지네이션 적용
         if lat and lng:
@@ -291,6 +291,60 @@ async def get_spot_detail(
     except Exception as e:
         logger.error(f"관광지 상세 조회 실패: {e}")
         raise HTTPException(status_code=500, detail="관광지 상세 조회 중 오류 발생")
+
+
+@router.get("/{spot_id}/similar")
+async def get_similar_spots(
+    spot_id: str,
+    limit: int = Query(5, ge=1, le=20),
+    lang: str = Query("ko"),
+):
+    """콘텐츠 기반 유사 관광지 추천"""
+    cache_key = f"similar_spots:{spot_id}:{limit}:{lang}"
+    cached = await cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        sb = get_supabase()
+
+        # 대상 관광지 존재 확인
+        target_result = sb.table("tourist_spots").select("id").eq("id", spot_id).limit(1).execute()
+        if not target_result.data:
+            raise HTTPException(status_code=404, detail="관광지를 찾을 수 없습니다")
+
+        # 전체 활성 관광지 조회
+        all_result = sb.table("tourist_spots").select(
+            "id, name, category_id, lat, lng, rating, images, address"
+        ).eq("is_active", True).execute()
+        all_spots = all_result.data or []
+
+        # 유사도 계산
+        similar = similarity_engine.find_similar(spot_id, all_spots, top_k=limit)
+
+        items = []
+        for s in similar:
+            items.append({
+                "id": str(s.get("id", "")),
+                "name": s.get("name", ""),
+                "category": s.get("category_id", ""),
+                "category_name": CATEGORY_MAP.get(s.get("category_id", ""), {}).get("name", ""),
+                "lat": s.get("lat", 0),
+                "lng": s.get("lng", 0),
+                "rating": s.get("rating"),
+                "thumbnail_url": s.get("images", [""])[0] if isinstance(s.get("images"), list) and s.get("images") else "",
+                "similarity_score": s.get("similarity_score", 0),
+            })
+
+        response = SuccessResponse(data=items)
+        await cache.set(cache_key, response.model_dump(), ttl=600)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"유사 관광지 추천 실패: {e}")
+        raise HTTPException(status_code=500, detail="유사 관광지 추천 중 오류 발생")
 
 
 # 음식점 카테고리 ID (TourAPI contentTypeId=39)

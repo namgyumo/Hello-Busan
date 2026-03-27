@@ -141,6 +141,9 @@
             });
         }
 
+        // Similar Spots (콘텐츠 기반 유사 추천)
+        _loadSimilarSpots(spotId);
+
     } catch (e) {
         console.error('상세 페이지 로드 실패:', e);
         _setText('detail-name', I18n.t('error_load_failed'));
@@ -470,6 +473,45 @@
     function _formatPrice(price) {
         if (!price) return '';
         return price.toLocaleString() + I18n.t('menu_currency');
+    }
+
+    async function _loadSimilarSpots(id) {
+        try {
+            const res = await fetch(`/api/v1/spots/${encodeURIComponent(id)}/similar?lang=${I18n.getLang()}`);
+            const json = await res.json();
+            if (!json.success || !json.data || json.data.length === 0) return;
+
+            const section = document.getElementById('similar-section');
+            if (section) section.style.display = '';
+
+            const list = document.getElementById('similar-list');
+            if (!list) return;
+
+            json.data.forEach(s => {
+                const card = document.createElement('a');
+                card.className = 'similar-card';
+                card.href = `/detail.html?id=${encodeURIComponent(s.id)}`;
+
+                const thumbHtml = s.thumbnail_url
+                    ? `<img class="similar-card__thumb" src="${_escapeHtml(s.thumbnail_url)}" alt="${_escapeHtml(s.name)}" loading="lazy">`
+                    : `<div class="similar-card__thumb similar-card__thumb--empty">&#x1F3DE;</div>`;
+
+                const catHtml = s.category_name
+                    ? `<span class="similar-card__cat">${_escapeHtml(s.category_name)}</span>`
+                    : '';
+
+                card.innerHTML = `
+                    ${thumbHtml}
+                    <div class="similar-card__info">
+                        <div class="similar-card__name">${_escapeHtml(s.name)}</div>
+                        ${catHtml}
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        } catch (e) {
+            console.warn('유사 관광지 로드 실패:', e);
+        }
     }
 
     function _initGallery(container, images, name) {

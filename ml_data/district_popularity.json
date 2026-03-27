@@ -1,0 +1,82 @@
+{
+  "강서구": {
+    "visitor_count": 3980658,
+    "ratio_pct": 7.2,
+    "normalized": 0.4321
+  },
+  "금정구": {
+    "visitor_count": 3036436,
+    "ratio_pct": 5.5,
+    "normalized": 0.2511
+  },
+  "기장군": {
+    "visitor_count": 3637868,
+    "ratio_pct": 6.6,
+    "normalized": 0.3664
+  },
+  "남구": {
+    "visitor_count": 3194572,
+    "ratio_pct": 5.8,
+    "normalized": 0.2814
+  },
+  "동구": {
+    "visitor_count": 3357378,
+    "ratio_pct": 6.1,
+    "normalized": 0.3127
+  },
+  "동래구": {
+    "visitor_count": 3725046,
+    "ratio_pct": 6.8,
+    "normalized": 0.3831
+  },
+  "부산진구": {
+    "visitor_count": 6943573,
+    "ratio_pct": 12.6,
+    "normalized": 1.0
+  },
+  "북구": {
+    "visitor_count": 2228076,
+    "ratio_pct": 4.0,
+    "normalized": 0.0962
+  },
+  "사상구": {
+    "visitor_count": 2714943,
+    "ratio_pct": 4.9,
+    "normalized": 0.1895
+  },
+  "사하구": {
+    "visitor_count": 2303035,
+    "ratio_pct": 4.2,
+    "normalized": 0.1106
+  },
+  "서구": {
+    "visitor_count": 1937996,
+    "ratio_pct": 3.5,
+    "normalized": 0.0406
+  },
+  "수영구": {
+    "visitor_count": 3618804,
+    "ratio_pct": 6.6,
+    "normalized": 0.3628
+  },
+  "연제구": {
+    "visitor_count": 2885218,
+    "ratio_pct": 5.2,
+    "normalized": 0.2222
+  },
+  "영도구": {
+    "visitor_count": 1726151,
+    "ratio_pct": 3.1,
+    "normalized": 0.0
+  },
+  "중구": {
+    "visitor_count": 3581424,
+    "ratio_pct": 6.5,
+    "normalized": 0.3556
+  },
+  "해운대구": {
+    "visitor_count": 6255473,
+    "ratio_pct": 11.3,
+    "normalized": 0.8681
+  }
+}

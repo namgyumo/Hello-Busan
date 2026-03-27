@@ -2,16 +2,19 @@
 추천 API 라우터 — API 설계서 API-004
 """
 from fastapi import APIRouter, Query, HTTPException
-from typing import Optional
+from typing import Optional, Dict
+from datetime import datetime, timedelta, timezone
 from backend.models.common import SuccessResponse, Meta
 from backend.ml.model import RecommendModel
 from backend.ml.features import FeatureBuilder
-from backend.ml.fallback import FallbackRecommender
+from backend.ml.fallback import FallbackRecommender, CATEGORY_META
 from backend.services.comfort import ComfortService
 from backend.services.location import LocationService
 from backend.cache.manager import CacheManager
 from backend.db.supabase import get_supabase
 from backend.services.i18n import I18nService
+from backend.services.user_profile import UserProfileBuilder
+from backend.api.weather import _determine_condition
 import logging
 
 router = APIRouter(prefix="/api/v1/recommend", tags=["recommend"])
@@ -33,6 +36,52 @@ fallback = FallbackRecommender()
 comfort_service = ComfortService()
 location_service = LocationService()
 i18n_service = I18nService()
+profile_builder = UserProfileBuilder()
+
+# 개인화 적용 최소 이벤트 수
+_MIN_EVENTS_FOR_PERSONALIZATION = 10
+
+
+async def _fetch_weather_context() -> Dict:
+    """현재 날씨 condition + 시간/요일 정보를 컨텍스트로 반환"""
+    kst = datetime.now(timezone(timedelta(hours=9)))
+    context = {
+        "weather": "clear_cool",
+        "hour": kst.hour,
+        "is_weekend": kst.weekday() >= 5,
+    }
+    try:
+        sb = get_supabase()
+        since = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+        result = (
+            sb.table("weather_data")
+            .select("sky_code, rain_type, temperature")
+            .gte("timestamp", since)
+            .order("timestamp", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if result.data:
+            row = result.data[0]
+            sky_code = str(row.get("sky_code") or "1")
+            rain_type = row.get("rain_type") or "없음"
+            temperature = row.get("temperature") if row.get("temperature") is not None else 20
+            context["weather"] = _determine_condition(sky_code, rain_type, temperature)
+    except Exception as e:
+        logger.warning(f"날씨 컨텍스트 조회 실패, 기본값 사용: {e}")
+    return context
+
+
+def _get_experiment_bucket(session_id: Optional[str]) -> str:
+    """세션 ID의 마지막 hex digit으로 A/B 버킷 분류.
+    0-7: A (기본 Fallback), 8-f: B (컨텍스트 강화 Fallback)"""
+    if not session_id:
+        return "A"
+    last_char = session_id.strip()[-1].lower()
+    try:
+        return "B" if int(last_char, 16) >= 8 else "A"
+    except ValueError:
+        return "A"
 
 
 @router.get("")
@@ -44,15 +93,31 @@ async def get_recommendations(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     lang: str = Query("ko"),
+    session_id: Optional[str] = Query(None, description="세션 ID (A/B 실험 + 개인화 추천)"),
 ):
     """[API-004] XGBoost 기반 관광지 추천"""
-    cache_key = f"recommend:{lat}:{lng}:{categories}:{search}:{limit}:{offset}:{lang}"
+    experiment_bucket = _get_experiment_bucket(session_id)
+    cache_key = f"recommend:{lat}:{lng}:{categories}:{search}:{limit}:{offset}:{lang}:{experiment_bucket}:{session_id or ''}"
     cached = await cache.get(cache_key)
     if cached:
         return cached
 
     fallback_used = False
     model_type = "xgboost"
+    personalized = False
+
+    # 사용자 프로필 조회 (session_id가 있을 때)
+    user_profile = None
+    if session_id:
+        try:
+            user_profile = await profile_builder.build_from_session(session_id)
+            if user_profile and user_profile["session_event_count"] >= _MIN_EVENTS_FOR_PERSONALIZATION:
+                personalized = True
+            else:
+                user_profile = None
+        except Exception as e:
+            logger.warning(f"사용자 프로필 조회 실패: {e}")
+            user_profile = None
 
     try:
         sb = get_supabase()
@@ -68,9 +133,8 @@ async def get_recommendations(
         if search and search.strip():
             keyword = _sanitize_keyword(search)
             if keyword:
-                query = query.or_(
-                    f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%"
-                )
+                or_filter = f"(name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%)"
+                query.params = query.params.add("or", or_filter)
 
         # Supabase 기본 1000행 제한 우회: 페이지네이션으로 전체 조회
         all_spots = []
@@ -102,6 +166,9 @@ async def get_recommendations(
                     lat, lng, s.get("lat", 0), s.get("lng", 0)
                 )
 
+        # 날씨/시간 컨텍스트 조회
+        weather_context = await _fetch_weather_context()
+
         # ML 모델 또는 폴백 — 전체 스코어링 후 offset/limit 적용
         if model.is_loaded:
             try:
@@ -121,6 +188,7 @@ async def get_recommendations(
                 top_list = fallback.recommend(
                     spots=spots, user_lat=lat, user_lng=lng,
                     comfort_data=comfort_data, limit=len(spots),
+                    context=weather_context,
                 )
                 scored_spots = [(s, 0.5) for s in top_list]
         else:
@@ -129,8 +197,13 @@ async def get_recommendations(
             top_list = fallback.recommend(
                 spots=spots, user_lat=lat, user_lng=lng,
                 comfort_data=comfort_data, limit=len(spots),
+                context=weather_context,
             )
             scored_spots = [(s, 0.5) for s in top_list]
+
+        # 개인화 가중치 적용
+        if personalized and user_profile:
+            scored_spots = _apply_personalization(scored_spots, user_profile)
 
         total_count = len(scored_spots)
         top_spots = scored_spots[offset:offset + limit]
@@ -139,7 +212,7 @@ async def get_recommendations(
         items = []
         for rank, (s, score) in enumerate(top_spots, offset + 1):
             comfort = comfort_data.get(str(s.get("id")), {})
-            reasons = _build_reasons(s, comfort, lang)
+            reasons = _build_reasons(s, comfort, lang, weather_context)
 
             raw_images = s.get("images", []) if isinstance(s.get("images"), list) else []
             thumbnail = raw_images[0] if raw_images else ""
@@ -168,6 +241,8 @@ async def get_recommendations(
                 limit=limit,
                 offset=offset,
                 fallback_used=fallback_used,
+                personalized=personalized,
+                experiment_bucket=experiment_bucket,
             ),
         )
 
@@ -181,12 +256,70 @@ async def get_recommendations(
         raise HTTPException(status_code=500, detail="추천 생성 중 오류 발생")
 
 
-def _build_reasons(spot: dict, comfort: dict, lang: str = "ko") -> list:
-    """추천 이유 문자열 생성 (다국어 지원)"""
+def _build_reasons(
+    spot: dict, comfort: dict, lang: str = "ko",
+    context: Optional[Dict] = None,
+) -> list:
+    """추천 이유 문자열 생성 (다국어 지원 + 컨텍스트 기반)"""
     reasons = []
     crowd_score = comfort.get("crowd_score")
     if crowd_score is not None and crowd_score >= 80:
         reasons.append(i18n_service.translate("reason_low_crowd", lang))
     if spot.get("distance_km") and spot["distance_km"] < 3:
         reasons.append(i18n_service.translate("reason_nearby", lang))
+
+    # 컨텍스트 기반 추천 사유
+    if context:
+        category = spot.get("category_id", "")
+        weather = context.get("weather", "")
+        hour = context.get("hour", 12)
+        meta = CATEGORY_META.get(category, {})
+        is_indoor = meta.get("is_indoor", False)
+
+        if weather == "rain" and is_indoor:
+            reasons.append("비 오는 날 실내 관광지" if lang == "ko" else "Indoor spot for rainy weather")
+        if weather == "clear_hot" and is_indoor:
+            reasons.append("더운 날 시원한 실내 명소" if lang == "ko" else "Cool indoor spot for hot weather")
+        if (18 <= hour or hour < 5) and category == "nightview":
+            reasons.append("저녁 시간 야경 명소" if lang == "ko" else "Night view spot for evening")
+        if (11 <= hour <= 13 or 17 <= hour <= 19) and category == "food":
+            reasons.append("식사 시간 맛집 추천" if lang == "ko" else "Restaurant recommendation for mealtime")
+        if 6 <= hour < 11 and category in ("nature", "temple"):
+            reasons.append("상쾌한 오전 산책 명소" if lang == "ko" else "Refreshing morning walk spot")
+        if context.get("is_weekend") and category in ("nature", "activity"):
+            reasons.append("주말 나들이 추천" if lang == "ko" else "Weekend outing recommendation")
+
     return reasons
+
+
+def _apply_personalization(
+    scored_spots: list[tuple[dict, float]],
+    profile: dict,
+) -> list[tuple[dict, float]]:
+    """사용자 프로필 기반 추천 점수 재조정
+
+    - 카테고리 선호도에 따라 해당 카테고리 관광지 부스트
+    - 이미 상세 조회한 관광지는 순위 하향 (다양성 확보)
+    """
+    cat_prefs = profile.get("category_preferences", {})
+    viewed_ids = set(profile.get("viewed_spot_ids", []))
+
+    adjusted = []
+    for spot, score in scored_spots:
+        new_score = float(score)
+        spot_id = spot.get("id")
+        category = spot.get("category_id", "")
+
+        # 카테고리 선호도 부스트 (최대 +30%)
+        if category in cat_prefs:
+            boost = cat_prefs[category] * 0.3
+            new_score *= (1.0 + boost)
+
+        # 이미 상세 조회한 관광지 하향 (다양성 확보, -40%)
+        if spot_id in viewed_ids:
+            new_score *= 0.6
+
+        adjusted.append((spot, new_score))
+
+    adjusted.sort(key=lambda x: x[1], reverse=True)
+    return adjusted

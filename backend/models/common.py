@@ -13,6 +13,8 @@ class Meta(BaseModel):
     offset: Optional[int] = None
     timestamp: str = ""
     fallback_used: bool = False
+    personalized: bool = False
+    experiment_bucket: Optional[str] = None
 
     def __init__(self, **data):
         if not data.get("timestamp"):

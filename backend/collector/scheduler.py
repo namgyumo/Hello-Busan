@@ -6,6 +6,7 @@
 """
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from backend.collector.tourism import TourismCollector
 from backend.collector.crowd import CrowdCollector
 from backend.collector.weather import WeatherCollector
@@ -99,6 +100,14 @@ class CollectorScheduler:
             name="대기질 수집",
         )
 
+        # 추천 모델 재학습: 매주 월요일 새벽 3시 (KST)
+        self.scheduler.add_job(
+            self._run_model_retrain,
+            trigger=CronTrigger(day_of_week="mon", hour=3, minute=0, timezone="Asia/Seoul"),
+            id="model_retrain",
+            name="추천 모델 주간 재학습",
+        )
+
     async def _run_collector(self, name: str):
         """수집기 실행"""
         collector = self.collectors.get(name)
@@ -136,6 +145,28 @@ class CollectorScheduler:
         logger.info(f"comfort_scores {updated}건 갱신")
 
         await self._broadcast_comfort_update()
+
+    async def _run_model_retrain(self):
+        """추천 모델 주간 재학습 파이프라인"""
+        logger.info("추천 모델 재학습 시작 (주간 스케줄)")
+        try:
+            from backend.ml.trainer import ModelTrainer
+
+            trainer = ModelTrainer()
+            result = await trainer.run_pipeline()
+
+            if result.get("status") == "success":
+                metrics = result.get("metrics", {})
+                logger.info(
+                    f"모델 재학습 완료 — "
+                    f"RMSE: {metrics.get('rmse', 'N/A'):.4f}, "
+                    f"R2: {metrics.get('r2', 'N/A'):.4f}, "
+                    f"학습 데이터: {metrics.get('train_size', 0)}건"
+                )
+            else:
+                logger.warning(f"모델 재학습 실패: {result.get('error', 'unknown')}")
+        except Exception as e:
+            logger.error(f"모델 재학습 중 예외 발생: {e}")
 
     async def _broadcast_comfort_update(self):
         """SSE 클라이언트에 업데이트 알림"""

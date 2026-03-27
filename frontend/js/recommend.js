@@ -5,6 +5,22 @@ const Recommend = (() => {
     const API_BASE = '/api/v1';
     const PAGE_SIZE = 20;
 
+    // Impression tracking — 카드가 뷰포트에 50% 이상 노출되면 1회 기록
+    const impressionObserver = typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const spotId = entry.target.dataset.spotId;
+                    const rank = entry.target.dataset.rank;
+                    if (typeof Analytics !== 'undefined') {
+                        Analytics.track('impression', { rank: parseInt(rank) }, spotId);
+                    }
+                    impressionObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 })
+        : null;
+
     async function fetchSpots(lat, lng, categories, offset, search) {
         const params = new URLSearchParams();
         if (lat != null) params.set('lat', lat);
@@ -14,8 +30,15 @@ const Recommend = (() => {
         params.set('limit', PAGE_SIZE);
         params.set('offset', offset || 0);
         params.set('lang', I18n.getLang());
+        // A/B 실험 + 개인화 추천용 세션 ID 전달
+        const sid = typeof Analytics !== 'undefined' ? sessionStorage.getItem('hello_busan_session_id') : null;
+        if (sid) params.set('session_id', sid);
 
         const res = await fetch(`${API_BASE}/recommend?${params}`);
+        if (!res.ok) {
+            console.warn('recommend API error:', res.status);
+            return { success: false, data: [] };
+        }
         return res.json();
     }
 
@@ -35,10 +58,12 @@ const Recommend = (() => {
             return;
         }
 
-        items.forEach(spot => {
+        items.forEach((spot, index) => {
             const card = document.createElement('a');
             card.className = 'spot-card';
             card.href = `/detail.html?id=${encodeURIComponent(spot.id)}`;
+            card.dataset.spotId = spot.id;
+            card.dataset.rank = spot.rank != null ? spot.rank : index + 1;
 
             const score = spot.comfort_score;
             const scoreClass = _scoreColorClass(score);
@@ -103,6 +128,11 @@ const Recommend = (() => {
             }
 
             container.appendChild(card);
+
+            // Impression observer 등록
+            if (impressionObserver) {
+                impressionObserver.observe(card);
+            }
         });
     }
 

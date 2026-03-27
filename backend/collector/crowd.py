@@ -1,20 +1,87 @@
 """
 혼잡도 데이터 수집기
 - 부산 관광지 실시간 혼잡도 추정
-- 방문자 수 데이터 기반 + 시간/요일/시즌 보정
+- 지하철 승하차 실데이터 기반 + 시간/요일/시즌 보정
 """
 from typing import Dict, List, Optional
 from backend.collector.base import BaseCollector
 from backend.db.supabase import get_supabase
 from backend.config import settings
 import hashlib
+import json
 import logging
 import math
 from datetime import datetime, timezone
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# 시간대별 혼잡도 가중치 (0~23시)
+# 지하철 승하차 데이터 (전처리 결과)
+_SUBWAY_DATA: Optional[Dict] = None
+_SUBWAY_DATA_PATH = Path(__file__).resolve().parent.parent.parent / "ml_data" / "subway_crowd_avg.json"
+
+# 관광지명 → 가장 가까운 역 매핑 (부산 주요 관광지)
+SPOT_STATION_MAP = {
+    "해운대해수욕장": "해운대", "해운대": "해운대",
+    "광안리해수욕장": "광안", "광안리": "광안",
+    "태종대": "남포",
+    "감천문화마을": "괴정",
+    "자갈치시장": "자갈치", "자갈치": "자갈치",
+    "남포동": "남포", "남포": "남포",
+    "BIFF광장": "남포", "국제시장": "자갈치",
+    "용두산공원": "남포", "부산타워": "남포",
+    "벡스코": "벡스코", "BEXCO": "벡스코",
+    "센텀시티": "센텀시티", "신세계백화점": "센텀시티",
+    "서면": "서면", "서면시장": "서면",
+    "부산역": "부산역", "부산진시장": "부산진",
+    "동백섬": "동백", "동백": "동백",
+    "민락수변공원": "민락", "민락": "민락",
+    "송도해수욕장": "사하", "송도": "사하",
+    "다대포해수욕장": "다대포해수욕장", "다대포": "다대포해수욕장",
+    "기장": "장산",
+    "금련산": "금련산",
+    "온천장": "온천장", "동래온천": "동래", "동래": "동래",
+    "충렬사": "충렬사",
+    "경성대": "경성대부경대", "부경대": "경성대부경대",
+    "수영": "수영",
+    "이기대": "경성대부경대",
+    "오륙도": "경성대부경대",
+    "범어사": "범어사",
+    "금정산": "범어사",
+    "부산대": "부산대",
+    "사직야구장": "사직", "사직": "사직",
+    "연산": "연산",
+    "구포": "구포", "구포시장": "구포",
+    "초량": "초량",
+    "중앙동": "중앙", "중앙": "중앙",
+    "영도": "남포",
+    "송정해수욕장": "해운대",
+    "달맞이고개": "해운대",
+    "장산": "장산",
+    "부전시장": "부전", "부전": "부전",
+    "전포카페거리": "전포", "전포": "전포",
+}
+
+
+def _load_subway_data() -> Dict:
+    """지하철 승하차 평균 데이터 로드 (lazy, 1회만)"""
+    global _SUBWAY_DATA
+    if _SUBWAY_DATA is not None:
+        return _SUBWAY_DATA
+    try:
+        with open(_SUBWAY_DATA_PATH, "r", encoding="utf-8") as f:
+            _SUBWAY_DATA = json.load(f)
+        logger.info(f"지하철 데이터 로드: {len(_SUBWAY_DATA)}개 역")
+    except FileNotFoundError:
+        logger.warning(f"지하철 데이터 파일 없음: {_SUBWAY_DATA_PATH} (규칙 기반 폴백)")
+        _SUBWAY_DATA = {}
+    except Exception as e:
+        logger.error(f"지하철 데이터 로드 실패: {e}")
+        _SUBWAY_DATA = {}
+    return _SUBWAY_DATA
+
+
+# 시간대별 혼잡도 가중치 (폴백용: 지하철 데이터 없는 관광지)
 HOUR_WEIGHTS = {
     0: 0.05, 1: 0.03, 2: 0.02, 3: 0.02, 4: 0.02, 5: 0.05,
     6: 0.10, 7: 0.15, 8: 0.25, 9: 0.40, 10: 0.60, 11: 0.75,
@@ -84,21 +151,52 @@ class CrowdCollector(BaseCollector):
         )
         return result.data or []
 
+    def _find_station_for_spot(self, spot_name: str) -> Optional[str]:
+        """관광지명으로 가장 가까운 지하철 역명 찾기"""
+        if not spot_name:
+            return None
+
+        # 1) 직접 매핑 (정확히 일치)
+        if spot_name in SPOT_STATION_MAP:
+            return SPOT_STATION_MAP[spot_name]
+
+        # 2) 부분 매칭 (관광지명에 역명이 포함된 경우)
+        subway_data = _load_subway_data()
+        for station in subway_data:
+            if station in spot_name or spot_name in station:
+                return station
+
+        return None
+
     def _estimate_crowd(self, spot: Dict, now: datetime) -> Dict:
         """
-        혼잡도 추정 (시간 + 요일 + 시즌 + 카테고리 + 장소 특성 종합)
+        혼잡도 추정 (지하철 실데이터 + 시간/요일/시즌/카테고리 보정)
         crowd_level: 0.0(여유) ~ 1.0(매우혼잡)
         """
         hour = now.hour
         weekday = now.weekday()
         month = now.month
         category = spot.get("category_id", "nature")
+        spot_name = spot.get("name", "")
 
-        # 기본 시간대 혼잡도
-        base = HOUR_WEIGHTS.get(hour, 0.5)
+        # 지하철 실데이터 기반 시간대 혼잡도 조회
+        subway_base = self._get_subway_crowd(spot_name, hour, weekday)
 
-        # 요일 보정
-        day_mult = DAY_MULTIPLIER.get(weekday, 1.0)
+        if subway_base is not None:
+            # 실데이터 있음: 지하철 데이터(70%) + 규칙 기반(30%) 블렌딩
+            rule_base = HOUR_WEIGHTS.get(hour, 0.5)
+            base = subway_base * 0.7 + rule_base * 0.3
+            source_type = "subway_data"
+        else:
+            # 실데이터 없음: 기존 규칙 기반 폴백
+            base = HOUR_WEIGHTS.get(hour, 0.5)
+            source_type = "estimation"
+
+        # 요일 보정 (지하철 데이터는 이미 평일/주말 구분이므로 보정 축소)
+        if subway_base is not None:
+            day_mult = 1.0  # 이미 요일 반영됨
+        else:
+            day_mult = DAY_MULTIPLIER.get(weekday, 1.0)
 
         # 시즌 보정
         season_mult = SEASON_MULTIPLIER.get(month, 1.0)
@@ -142,9 +240,33 @@ class CrowdCollector(BaseCollector):
             "crowd_level": level_text,
             "crowd_count": visitor_count,
             "crowd_ratio": crowd_ratio,
-            "source": "estimation",
+            "source": source_type,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
+    def _get_subway_crowd(self, spot_name: str, hour: int, weekday: int) -> Optional[float]:
+        """
+        지하철 승하차 데이터에서 해당 관광지/시간대/요일의 혼잡도 조회
+        Returns: 0.0~1.0 정규화 값, 데이터 없으면 None
+        """
+        station = self._find_station_for_spot(spot_name)
+        if not station:
+            return None
+
+        subway_data = _load_subway_data()
+        station_data = subway_data.get(station)
+        if not station_data:
+            return None
+
+        day_type = "weekend" if weekday >= 5 else "weekday"
+        hour_key = f"{hour:02d}"
+
+        hour_data = station_data.get(day_type, {})
+        value = hour_data.get(hour_key)
+        if value is None:
+            return None
+
+        return float(value)
 
     def _estimate_visitor_count(self, crowd_level: float, category: str) -> int:
         """혼잡도 레벨로부터 방문자 수 추정"""
