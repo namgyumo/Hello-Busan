@@ -4,7 +4,6 @@
 """
 import time
 import logging
-from collections import defaultdict
 
 from fastapi import APIRouter, Request, HTTPException
 
@@ -17,25 +16,42 @@ logger = logging.getLogger(__name__)
 
 # IP 기반 간단한 rate limiting (메모리 기반)
 # {ip: [timestamp, timestamp, ...]}
-_rate_limit_store: dict[str, list[float]] = defaultdict(list)
+_rate_limit_store: dict[str, list[float]] = {}
 RATE_LIMIT_WINDOW = 60  # 60초
 RATE_LIMIT_MAX = 30     # 윈도우당 최대 요청 수
 
 
+_last_cleanup = time.time()
+_CLEANUP_INTERVAL = 300  # 5분마다 전체 정리
+
+
 def _check_rate_limit(client_ip: str) -> bool:
     """IP 기반 rate limit 확인. True = 허용, False = 차단"""
+    global _last_cleanup
     now = time.time()
-    timestamps = _rate_limit_store[client_ip]
+
+    # 주기적으로 오래된 IP 엔트리 전체 정리 (메모리 누수 방지)
+    if now - _last_cleanup > _CLEANUP_INTERVAL:
+        stale_ips = [
+            ip for ip, ts_list in _rate_limit_store.items()
+            if not ts_list or now - max(ts_list) > RATE_LIMIT_WINDOW
+        ]
+        for ip in stale_ips:
+            del _rate_limit_store[ip]
+        _last_cleanup = now
+
+    # defaultdict 접근 전에 존재 여부 확인하여 빈 리스트 자동생성 방지
+    timestamps = _rate_limit_store.get(client_ip, [])
 
     # 윈도우 밖의 오래된 타임스탬프 제거
-    _rate_limit_store[client_ip] = [
-        ts for ts in timestamps if now - ts < RATE_LIMIT_WINDOW
-    ]
+    timestamps = [ts for ts in timestamps if now - ts < RATE_LIMIT_WINDOW]
 
-    if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_MAX:
+    if len(timestamps) >= RATE_LIMIT_MAX:
+        _rate_limit_store[client_ip] = timestamps
         return False
 
-    _rate_limit_store[client_ip].append(now)
+    timestamps.append(now)
+    _rate_limit_store[client_ip] = timestamps
     return True
 
 
@@ -75,7 +91,8 @@ async def collect_events(request: Request, body: EventBatchRequest):
         # Supabase 배치 삽입
         sb.table("user_events").insert(rows).execute()
 
-        logger.debug(f"이벤트 {len(rows)}건 수집 완료 (session: {body.events[0].session_id[:8]}...)")
+        session_preview = body.events[0].session_id[:8] if body.events else "unknown"
+        logger.debug(f"이벤트 {len(rows)}건 수집 완료 (session: {session_preview}...)")
 
         return SuccessResponse(
             data=EventBatchResponse(accepted=len(rows)).model_dump()

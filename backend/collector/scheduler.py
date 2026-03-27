@@ -11,6 +11,7 @@ from backend.collector.crowd import CrowdCollector
 from backend.collector.weather import WeatherCollector
 from backend.collector.transport import TransportCollector
 from backend.collector.busan_api import BusanApiCollector
+from backend.collector.festivals import FestivalCollector
 from backend.services.score_calculator import ScoreCalculator
 import logging
 
@@ -28,6 +29,7 @@ class CollectorScheduler:
             "weather": WeatherCollector(),
             "transport": TransportCollector(),
             "busan_api": BusanApiCollector(),
+            "festivals": FestivalCollector(),
         }
         self.score_calculator = ScoreCalculator()
         self._setup_jobs()
@@ -75,6 +77,15 @@ class CollectorScheduler:
             args=["transport"],
             id="transport_collector",
             name="교통 정보 수집",
+        )
+
+        # 축제/이벤트: 매일 1회
+        self.scheduler.add_job(
+            self._run_collector,
+            trigger=IntervalTrigger(hours=24),
+            args=["festivals"],
+            id="festivals_collector",
+            name="축제/이벤트 수집",
         )
 
     async def _run_collector(self, name: str):
@@ -131,7 +142,7 @@ class CollectorScheduler:
 
             comfort_scores = (
                 sb.table("comfort_scores")
-                .select("spot_id, total_score, grade")
+                .select("spot_id, total_score, crowd_score, grade")
                 .execute()
             )
 
@@ -153,7 +164,10 @@ class CollectorScheduler:
                     "comfort_score": c.get("total_score", 50),
                     "comfort_grade": c.get("grade", "보통"),
                 })
-                intensity = round(1 - (c.get("total_score", 50) / 100), 2)
+                crowd_score = c.get("crowd_score", 50)
+                if crowd_score is None:
+                    crowd_score = 50
+                intensity = round(1 - (crowd_score / 100), 2)
                 heatmap_points.append([s["lat"], s["lng"], intensity])
 
             await broadcast_update("comfort_update", {"spots": spot_list})

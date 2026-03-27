@@ -22,6 +22,11 @@ const CourseModule = (() => {
             closeBtn.addEventListener('click', closePanel);
         }
 
+        const overlay = document.getElementById('course-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', closePanel);
+        }
+
         const generateBtn = document.getElementById('course-generate-btn');
         if (generateBtn) {
             generateBtn.addEventListener('click', generate);
@@ -56,7 +61,8 @@ const CourseModule = (() => {
                 pickingStart = false;
                 const notice = document.getElementById('course-map-notice');
                 if (notice) notice.style.display = 'none';
-                document.getElementById('map').style.cursor = '';
+                const mapEl = document.getElementById('map');
+                if (mapEl) mapEl.style.cursor = '';
             };
             map.on('click', mapClickHandler);
         }
@@ -64,17 +70,40 @@ const CourseModule = (() => {
 
     function openPanel() {
         const panel = document.getElementById('course-panel');
+        const overlay = document.getElementById('course-overlay');
         if (panel) {
             panel.classList.add('open');
+            if (overlay) overlay.classList.add('open');
             _showSettings();
+            // On mobile, switch to map view when opening course planner
+            if (window.innerWidth < 768) {
+                const layout = document.querySelector('.main-layout');
+                if (layout) {
+                    layout.classList.remove('view--list');
+                    layout.classList.add('view--map');
+                }
+                const handleEl = document.getElementById('map-list-handle');
+                if (handleEl) {
+                    handleEl.querySelectorAll('.map-list-handle__tab').forEach(t => t.classList.remove('active'));
+                    const mapTab = handleEl.querySelector('[data-view="map"]');
+                    if (mapTab) mapTab.classList.add('active');
+                }
+                setTimeout(() => {
+                    const m = MapModule.getMap();
+                    if (m) m.invalidateSize();
+                }, 350);
+            }
         }
     }
 
     function closePanel() {
         const panel = document.getElementById('course-panel');
+        const overlay = document.getElementById('course-overlay');
         if (panel) panel.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
         pickingStart = false;
-        document.getElementById('map').style.cursor = '';
+        const mapEl = document.getElementById('map');
+        if (mapEl) mapEl.style.cursor = '';
         const notice = document.getElementById('course-map-notice');
         if (notice) notice.style.display = 'none';
     }
@@ -95,9 +124,10 @@ const CourseModule = (() => {
 
     function _handleStartChange(value) {
         const notice = document.getElementById('course-map-notice');
+        const mapEl = document.getElementById('map');
         if (value === 'current') {
             pickingStart = false;
-            document.getElementById('map').style.cursor = '';
+            if (mapEl) mapEl.style.cursor = '';
             if (notice) notice.style.display = 'none';
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -114,7 +144,7 @@ const CourseModule = (() => {
             }
         } else if (value === 'map') {
             pickingStart = true;
-            document.getElementById('map').style.cursor = 'crosshair';
+            if (mapEl) mapEl.style.cursor = 'crosshair';
             if (notice) {
                 notice.textContent = I18n.t('course_click_map');
                 notice.style.display = 'block';
@@ -122,7 +152,7 @@ const CourseModule = (() => {
         } else {
             // default: Busan Station
             pickingStart = false;
-            document.getElementById('map').style.cursor = '';
+            if (mapEl) mapEl.style.cursor = '';
             if (notice) notice.style.display = 'none';
             startLat = null;
             startLng = null;
@@ -169,10 +199,14 @@ const CourseModule = (() => {
         params.set('max_spots', maxSpots);
         params.set('lang', I18n.getLang());
 
-        // Show loading
+        // Show loading with spinner
         const resultList = document.getElementById('course-list');
         const summaryEl = document.getElementById('course-summary');
-        if (resultList) resultList.innerHTML = `<div class="course-loading">${I18n.t('course_generating')}</div>`;
+        const genBtn = document.getElementById('course-generate-btn');
+        const regenBtn = document.getElementById('course-regen-btn');
+        if (genBtn) genBtn.disabled = true;
+        if (regenBtn) regenBtn.disabled = true;
+        if (resultList) resultList.innerHTML = `<div class="course-loading"><div class="course-loading-spinner"></div><span>${I18n.t('course_generating')}</span></div>`;
         _showResult();
 
         try {
@@ -195,6 +229,9 @@ const CourseModule = (() => {
             if (resultList) {
                 resultList.innerHTML = `<div class="course-empty">${I18n.t('course_no_results')}</div>`;
             }
+        } finally {
+            if (genBtn) genBtn.disabled = false;
+            if (regenBtn) regenBtn.disabled = false;
         }
     }
 
@@ -228,7 +265,7 @@ const CourseModule = (() => {
         const latlngs = [startPt];
         data.course.forEach(item => {
             const spot = item.spot;
-            if (!spot.lat || !spot.lng) return;
+            if (spot.lat == null || spot.lng == null) return;
             const pt = [spot.lat, spot.lng];
             latlngs.push(pt);
 
@@ -240,8 +277,8 @@ const CourseModule = (() => {
                     iconAnchor: [16, 32],
                 }),
             }).addTo(courseLayer).bindPopup(`
-                <strong>${item.order}. ${spot.name}</strong><br>
-                ${I18n.t('course_comfort')}: ${spot.comfort_score || '--'}<br>
+                <strong>${item.order}. ${_escapeHtml(spot.name)}</strong><br>
+                ${I18n.t('course_comfort')}: ${spot.comfort_score != null ? spot.comfort_score : '--'}<br>
                 ${I18n.t('course_travel_time')}: ${item.travel_time}${I18n.t('course_minutes')} / ${I18n.t('course_stay_time')}: ${item.stay_time}${I18n.t('course_minutes')}
             `);
         });
@@ -277,9 +314,9 @@ const CourseModule = (() => {
             card.innerHTML = `
                 <div class="course-item__order">${item.order}</div>
                 <div class="course-item__body">
-                    <div class="course-item__name">${spot.name}</div>
+                    <div class="course-item__name">${_escapeHtml(spot.name)}</div>
                     <div class="course-item__meta">
-                        <span class="course-item__comfort ${scoreClass}">${spot.comfort_score || '--'}</span>
+                        <span class="course-item__comfort ${scoreClass}">${spot.comfort_score != null ? spot.comfort_score : '--'}</span>
                         <span class="course-item__dist">${I18n.t('course_distance_from_prev')} ${item.distance_from_prev}km</span>
                         <span class="course-item__time">${I18n.t('course_travel_time')} ${item.travel_time}${I18n.t('course_minutes')}</span>
                     </div>
@@ -314,15 +351,15 @@ const CourseModule = (() => {
 
     function resetCourse() {
         const map = MapModule.getMap();
-        if (courseLayer) {
+        if (map && courseLayer) {
             map.removeLayer(courseLayer);
             courseLayer = null;
         }
-        if (polylineLayer) {
+        if (map && polylineLayer) {
             map.removeLayer(polylineLayer);
             polylineLayer = null;
         }
-        if (startMarker) {
+        if (map && startMarker) {
             map.removeLayer(startMarker);
             startMarker = null;
         }
@@ -348,6 +385,13 @@ const CourseModule = (() => {
         if (score >= 60) return 'score--normal';
         if (score >= 40) return 'score--crowded';
         return 'score--very-crowded';
+    }
+
+    function _escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     return { init, openPanel, closePanel, resetCourse };

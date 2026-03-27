@@ -9,7 +9,7 @@ from backend.db.supabase import get_supabase
 from backend.config import settings
 import logging
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ class CrowdCollector(BaseCollector):
             "crowd_count": visitor_count,
             "crowd_ratio": crowd_ratio,
             "source": "estimation",
-            "timestamp": now.isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     def _estimate_visitor_count(self, crowd_level: float, category: str) -> int:

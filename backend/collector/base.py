@@ -137,3 +137,5 @@ class BaseCollector(ABC):
                 "elapsed_seconds": elapsed,
                 "status": "failed",
             }
+        finally:
+            await self.close()

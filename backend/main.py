@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import sentry_sdk
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -92,7 +92,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -105,6 +105,7 @@ def create_app() -> FastAPI:
     from backend.api.weather import router as weather_router
     from backend.api.analytics import router as analytics_router
     from backend.api.course import router as course_router
+    from backend.api.transport import router as transport_router
 
     app.include_router(spots_router)
     app.include_router(recommend_router)
@@ -113,6 +114,7 @@ def create_app() -> FastAPI:
     app.include_router(weather_router)
     app.include_router(analytics_router)
     app.include_router(course_router)
+    app.include_router(transport_router)
 
     # 프론트엔드 정적 파일 서빙
     frontend_dir = Path(__file__).parent.parent / "frontend"
@@ -171,9 +173,17 @@ def create_app() -> FastAPI:
             },
         }
 
+    def _verify_admin(request: Request):
+        """간단한 관리자 인증: Authorization 헤더에 SECRET_KEY 확인"""
+        auth = request.headers.get("Authorization", "")
+        expected = f"Bearer {settings.SECRET_KEY}"
+        if not auth or auth != expected:
+            raise HTTPException(status_code=403, detail="Admin access denied")
+
     @app.post("/api/v1/admin/seed-nightview")
-    async def seed_nightview():
+    async def seed_nightview(request: Request):
         """야경 명소 카테고리 시딩 + comfort 재계산"""
+        _verify_admin(request)
         from backend.collector.tourism import TourismCollector
         from backend.services.score_calculator import ScoreCalculator
 
@@ -191,8 +201,9 @@ def create_app() -> FastAPI:
         }
 
     @app.post("/api/v1/admin/recollect")
-    async def recollect():
+    async def recollect(request: Request):
         """혼잡도 재수집 + comfort 재계산 (관리용)"""
+        _verify_admin(request)
         from backend.collector.crowd import CrowdCollector
         from backend.services.score_calculator import ScoreCalculator
 
@@ -210,8 +221,9 @@ def create_app() -> FastAPI:
         }
 
     @app.post("/api/v1/admin/collect-busan")
-    async def collect_busan():
+    async def collect_busan(request: Request):
         """부산시 공공데이터 6종 수집 (관리용)"""
+        _verify_admin(request)
         from backend.collector.busan_api import BusanApiCollector
         from backend.collector.tourism import TourismCollector
         from backend.collector.crowd import CrowdCollector

@@ -9,7 +9,7 @@ from backend.db.supabase import get_supabase
 from backend.config import settings
 from backend.regions import REGION_GRID
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,12 @@ class WeatherCollector(BaseCollector):
     async def collect(self) -> List[Dict]:
         """5개 권역별 단기예보 수집"""
         now = datetime.now()
-        base_date = now.strftime("%Y%m%d")
         base_time = self._get_base_time(now)
+        # base_time이 "2300"이고 현재 시각이 02시 이전이면 전날 발표분 사용
+        if base_time == "2300" and now.hour < 2:
+            base_date = (now - timedelta(days=1)).strftime("%Y%m%d")
+        else:
+            base_date = now.strftime("%Y%m%d")
 
         all_weather: List[Dict] = []
 
@@ -95,7 +99,7 @@ class WeatherCollector(BaseCollector):
                 "rain_amount": rain_amount,
                 "humidity": int(float(data.get("REH", 0))),
                 "wind_speed": float(data.get("WSD", 0)),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             result.append(weather)
 

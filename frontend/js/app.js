@@ -129,6 +129,11 @@
             Recommend.renderList(items, append);
             MapModule.updateMarkers(items);
 
+            // When searching or filtering, zoom map to fit results
+            if (!append && (searchQuery || categories.length > 0) && items.length > 0) {
+                MapModule.fitToSpots(items);
+            }
+
             currentOffset += items.length;
 
             const btnMore = document.getElementById('btn-more');

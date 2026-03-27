@@ -7,8 +7,8 @@ const Recommend = (() => {
 
     async function fetchSpots(lat, lng, categories, offset, search) {
         const params = new URLSearchParams();
-        if (lat) params.set('lat', lat);
-        if (lng) params.set('lng', lng);
+        if (lat != null) params.set('lat', lat);
+        if (lng != null) params.set('lng', lng);
         if (categories && categories.length) params.set('categories', categories.join(','));
         if (search) params.set('search', search);
         params.set('limit', PAGE_SIZE);
@@ -38,16 +38,18 @@ const Recommend = (() => {
         items.forEach(spot => {
             const card = document.createElement('a');
             card.className = 'spot-card';
-            card.href = `/detail.html?id=${spot.id}`;
+            card.href = `/detail.html?id=${encodeURIComponent(spot.id)}`;
 
             const score = spot.comfort_score;
             const scoreClass = _scoreColorClass(score);
             const gradeText = _gradeText(score);
             const categoryText = _categoryLabel(spot.category);
             const distText = spot.distance_km != null ? `${spot.distance_km}km` : '';
+            const safeName = _escapeHtml(spot.name);
 
-            const thumbHtml = spot.images && spot.images.length > 0
-                ? `<div class="spot-card__thumb"><img src="${spot.images[0]}" alt="" loading="lazy"></div>`
+            const thumbUrl = spot.thumbnail_url || (spot.images && spot.images.length > 0 ? spot.images[0] : '');
+            const thumbHtml = thumbUrl
+                ? `<div class="spot-card__thumb"><img src="${_escapeHtml(thumbUrl)}" alt="" loading="lazy"></div>`
                 : `<div class="spot-card__thumb"><div class="spot-card__thumb-placeholder">${_categoryEmoji(spot.category)}</div></div>`;
 
             const isFav = typeof Favorites !== 'undefined' && Favorites.isFavorite(spot.id);
@@ -65,7 +67,7 @@ const Recommend = (() => {
                         ${categoryText ? `<span class="spot-card__cat">${categoryText}</span>` : ''}
                         ${gradeText ? `<span class="spot-card__grade ${scoreClass}">${gradeText}</span>` : ''}
                     </div>
-                    <div class="spot-card__name">${spot.name}</div>
+                    <div class="spot-card__name">${safeName}</div>
                     <div class="spot-card__info">
                         ${distText ? `<span>${distText}</span>` : ''}
                     </div>
@@ -133,18 +135,18 @@ const Recommend = (() => {
 
     function _gradeText(score) {
         if (score == null) return '';
-        if (score >= 80) return '쾌적';
-        if (score >= 60) return '보통';
-        if (score >= 40) return '혼잡';
-        return '매우혼잡';
+        if (score >= 80) return I18n.t('comfort_good');
+        if (score >= 60) return I18n.t('comfort_normal');
+        if (score >= 40) return I18n.t('comfort_crowded');
+        return I18n.t('comfort_very_crowded');
     }
 
     function _categoryLabel(cat) {
-        const map = {
-            nature: '자연', culture: '문화', food: '맛집',
-            activity: '액티비티', shopping: '쇼핑', nightview: '야경',
+        const keyMap = {
+            nature: 'category_nature', culture: 'category_culture', food: 'category_food',
+            activity: 'category_activity', shopping: 'category_shopping', nightview: 'category_nightview',
         };
-        return map[cat] || cat || '';
+        return keyMap[cat] ? I18n.t(keyMap[cat]) : (cat || '');
     }
 
     function _categoryEmoji(cat) {
@@ -153,6 +155,13 @@ const Recommend = (() => {
             activity: '\u{1F3C4}', shopping: '\u{1F6CD}', nightview: '\u{1F319}',
         };
         return map[cat] || '\u{1F30A}';
+    }
+
+    function _escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     return { fetchSpots, renderList, showSkeleton, PAGE_SIZE };

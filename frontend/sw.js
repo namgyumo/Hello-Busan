@@ -6,7 +6,7 @@
  *   - Stale While Revalidate: tourist spot images
  */
 
-const CACHE_VERSION = 'hello-busan-v1';
+const CACHE_VERSION = 'hello-busan-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
     '/detail.html',
     '/favorites.html',
     '/offline.html',
+    '/manifest.json',
     '/css/style.css',
     '/js/i18n.js',
     '/js/theme.js',
@@ -36,6 +37,10 @@ const STATIC_ASSETS = [
     '/js/share.js',
     '/js/search.js',
     '/js/course.js',
+    '/js/directions.js',
+    '/js/festivals.js',
+    '/icons/icon-192x192.svg',
+    '/icons/icon-512x512.svg',
     '/locales/ko.json',
     '/locales/en.json',
     '/locales/ja.json',

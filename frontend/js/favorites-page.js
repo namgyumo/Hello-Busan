@@ -30,27 +30,27 @@
         }
 
         try {
-            const params = new URLSearchParams({
-                ids: ids.join(','),
-                lang: I18n.getLang(),
-            });
-            const res = await fetch(`${API_BASE}/recommend?${params}`);
-            const json = await res.json();
+            // Fetch all favorited spots in parallel
+            const results = await Promise.allSettled(
+                ids.map(id =>
+                    fetch(`${API_BASE}/spots/${encodeURIComponent(id)}?lang=${I18n.getLang()}`)
+                        .then(res => res.json())
+                        .then(json => (json.success && json.data) ? json.data : null)
+                )
+            );
+            const spots = results
+                .filter(r => r.status === 'fulfilled' && r.value !== null)
+                .map(r => r.value);
+            const json = { success: spots.length > 0, data: spots };
 
             if (!json.success || !json.data) {
                 renderFromIds(container, ids);
                 return;
             }
 
-            const spotMap = {};
-            json.data.forEach(s => { spotMap[s.id] = s; });
-
             container.innerHTML = '';
-            ids.forEach(id => {
-                const spot = spotMap[id];
-                if (spot) {
-                    container.appendChild(createSpotCard(spot));
-                }
+            json.data.forEach(spot => {
+                container.appendChild(createSpotCard(spot));
             });
 
             if (container.children.length === 0) {
@@ -86,17 +86,26 @@
         });
     }
 
+    function _escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     function createSpotCard(spot) {
         const card = document.createElement('a');
         card.className = 'spot-card';
-        card.href = `/detail.html?id=${spot.id}`;
+        card.href = `/detail.html?id=${encodeURIComponent(spot.id)}`;
 
-        const score = spot.comfort_score;
+        const score = spot.comfort_score != null ? spot.comfort_score : (spot.comfort ? spot.comfort.score : null);
         const scoreClass = _scoreColorClass(score);
         const categoryText = _categoryLabel(spot.category);
+        const safeName = _escapeHtml(spot.name);
 
-        const thumbHtml = spot.images && spot.images.length > 0
-            ? `<div class="spot-card__thumb"><img src="${spot.images[0]}" alt="" loading="lazy"></div>`
+        const thumbUrl = spot.thumbnail_url || (spot.images && spot.images.length > 0 ? spot.images[0] : '');
+        const thumbHtml = thumbUrl
+            ? `<div class="spot-card__thumb"><img src="${_escapeHtml(thumbUrl)}" alt="" loading="lazy"></div>`
             : `<div class="spot-card__thumb"><div class="spot-card__thumb-placeholder">${_categoryEmoji(spot.category)}</div></div>`;
 
         card.innerHTML = `
@@ -108,9 +117,9 @@
                 <div class="spot-card__top">
                     ${categoryText ? `<span class="spot-card__cat">${categoryText}</span>` : ''}
                 </div>
-                <div class="spot-card__name">${spot.name}</div>
+                <div class="spot-card__name">${safeName}</div>
             </div>
-            <button class="favorite-btn favorite-btn--active" data-spot-id="${spot.id}" aria-label="${I18n.t('favorite_remove')}" type="button">
+            <button class="favorite-btn favorite-btn--active" data-spot-id="${_escapeHtml(String(spot.id))}" aria-label="${I18n.t('favorite_remove')}" type="button">
                 <span class="favorite-btn__icon">&#x2764;</span>
             </button>
         `;
@@ -146,11 +155,11 @@
     }
 
     function _categoryLabel(cat) {
-        const map = {
-            nature: '\u{1F3D4}', culture: '\u{1F3DB}', food: '\u{1F35C}',
-            activity: '\u{1F3C4}', shopping: '\u{1F6CD}', nightview: '\u{1F319}',
+        const keyMap = {
+            nature: 'category_nature', culture: 'category_culture', food: 'category_food',
+            activity: 'category_activity', shopping: 'category_shopping', nightview: 'category_nightview',
         };
-        return map[cat] || cat || '';
+        return keyMap[cat] ? I18n.t(keyMap[cat]) : (cat || '');
     }
 
     function _categoryEmoji(cat) {

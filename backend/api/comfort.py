@@ -58,7 +58,7 @@ async def get_comfort_bulk():
 
     except Exception as e:
         logger.error(f"일괄 쾌적함 조회 실패: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="일괄 쾌적함 조회 중 오류 발생")
 
 
 @router.get("/{spot_id}/timeline")
@@ -72,10 +72,10 @@ async def get_comfort_timeline(spot_id: str):
     try:
         sb = get_supabase()
 
-        # 관광지 정보 (카테고리 필요)
+        # 관광지 정보 (카테고리 + 좌표 필요)
         spot_result = (
             sb.table("tourist_spots")
-            .select("id, category_id")
+            .select("id, category_id, lat, lng, region_code")
             .eq("id", spot_id)
             .limit(1)
             .execute()
@@ -90,9 +90,13 @@ async def get_comfort_timeline(spot_id: str):
         transport_map = await _score_calc._get_transport_scores()
         transport_score = transport_map.get(spot_id, {}).get("transit_score", 50)
 
-        # 현재 날씨 데이터
-        weather = await _score_calc._get_latest_weather()
-        weather_score = _score_calc._calc_weather_score(weather)
+        # 현재 날씨 데이터 (관광지 위치 기반 가장 가까운 권역 매칭)
+        weather_map = await _score_calc._get_latest_weather()
+        spot_lat = float(spot.get("lat", 0))
+        spot_lng = float(spot.get("lng", 0))
+        spot_region = spot.get("region_code")
+        region = spot_region if spot_region in weather_map else _score_calc._find_nearest_region(spot_lat, spot_lng)
+        weather_score = _score_calc._calc_weather_score(weather_map.get(region, {}))
 
         # spot_id 기반 결정적 오프셋 (crowd.py와 동일 로직)
         spot_hash = hash(str(spot_id)) % 1000 / 1000.0
@@ -158,7 +162,7 @@ async def get_comfort_timeline(spot_id: str):
         raise
     except Exception as e:
         logger.error(f"타임라인 조회 실패 [{spot_id}]: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="타임라인 조회 중 오류 발생")
 
 
 @router.get("/{spot_id}")
@@ -182,4 +186,4 @@ async def get_comfort(spot_id: str, lang: str = Query("ko")):
         raise
     except Exception as e:
         logger.error(f"쾌적함 조회 실패: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="쾌적함 조회 중 오류 발생")

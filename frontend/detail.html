@@ -56,7 +56,7 @@
     <!-- Header -->
     <header class="header" role="banner">
         <div class="detail-header">
-            <button class="btn-back" onclick="history.back()" aria-label="뒤로가기">&larr;</button>
+            <button class="btn-back" id="btn-back" aria-label="뒤로가기">&larr;</button>
             <a href="/" class="header__logo" aria-label="Hello, Busan! 홈으로">Hello, Busan!</a>
         </div>
         <div class="header__actions">
@@ -119,6 +119,17 @@
             </div>
         </div>
 
+        <!-- Directions Button (shown by detail.js when coordinates are available) -->
+        <div class="directions-btn-wrap" id="directions-btn-wrap" style="display:none">
+            <button class="btn-directions" id="btn-directions" aria-label="길찾기">
+                <span class="btn-directions__icon" aria-hidden="true">&#x1F68C;</span>
+                <span data-i18n="directions_button">길찾기</span>
+            </button>
+        </div>
+
+        <!-- Directions Panel -->
+        <div class="directions-panel" id="directions-panel" data-lat="" data-lng="" data-spot-id=""></div>
+
         <!-- Basic Info -->
         <section class="detail-section" id="detail-info">
             <h3 class="detail-section__title" data-i18n="detail_info">기본 정보</h3>
@@ -130,10 +141,23 @@
             </ul>
         </section>
 
+        <!-- Menu (맛집 카테고리에서만 표시) -->
+        <section class="detail-section" id="menu-section" style="display:none">
+            <h3 class="detail-section__title" data-i18n="menu_title">메뉴</h3>
+            <div class="menu-summary" id="menu-summary"></div>
+            <div class="menu-filters" id="menu-filters">
+                <button class="menu-filter menu-filter--active" data-range="all" data-i18n="menu_filter_all">전체</button>
+                <button class="menu-filter" data-range="low" data-i18n="menu_filter_low">저가</button>
+                <button class="menu-filter" data-range="mid" data-i18n="menu_filter_mid">중가</button>
+                <button class="menu-filter" data-range="high" data-i18n="menu_filter_high">고가</button>
+            </div>
+            <div class="menu-list" id="menu-list"></div>
+        </section>
+
         <!-- Description -->
         <section class="detail-section" id="detail-desc-section" style="display:none">
             <h3 class="detail-section__title" data-i18n="detail_overview">소개</h3>
-            <p id="detail-description" class="detail-description"></p>
+            <div id="detail-description" class="detail-description"></div>
         </section>
 
         <!-- Map -->
@@ -152,9 +176,21 @@
         </section>
     </main>
 
-    <footer class="footer">
-        <p>&copy; 2026 Hello, Busan!</p>
-    </footer>
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" role="navigation" aria-label="메인 메뉴">
+        <a href="/" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F3E0;</span>
+            <span class="bottom-nav__label" data-i18n="nav_home">홈</span>
+        </a>
+        <a href="/map.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
+            <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/favorites.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
+            <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
+        </a>
+    </nav>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -166,6 +202,7 @@
     <script src="/js/offline-store.js"></script>
     <script src="/js/share.js"></script>
     <script src="/js/pwa.js"></script>
+    <script src="/js/directions.js"></script>
     <script src="/js/detail.js"></script>
 
     <!-- SW Update Toast -->

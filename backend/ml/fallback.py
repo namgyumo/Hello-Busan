@@ -62,9 +62,11 @@ class FallbackRecommender:
         # 쾌적도 점수 (낮을수록 좋음 = 덜 혼잡)
         crowd_score = 0.5
         if comfort_data:
-            comfort = comfort_data.get(spot.get("id", ""), {})
-            crowd_level = comfort.get("crowd_level", 0.5)
-            crowd_score = 1 - crowd_level
+            comfort = comfort_data.get(str(spot.get("id", "")), {})
+            raw_crowd_score = comfort.get("crowd_score", 50)
+            if raw_crowd_score is None:
+                raw_crowd_score = 50
+            crowd_score = raw_crowd_score / 100.0
 
         # 인기도 점수
         view_count = spot.get("view_count", 0)

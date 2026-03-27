@@ -72,11 +72,11 @@ class FeatureBuilder:
         now: datetime,
     ) -> List[float]:
         """단일 관광지 피처 벡터"""
-        spot_id = spot.get("id", "")
+        spot_id = str(spot.get("id", ""))
         comfort = (comfort_data or {}).get(spot_id, {})
 
         # 카테고리 인코딩
-        category = self.CATEGORY_MAP.get(spot.get("category", ""), 0)
+        category = self.CATEGORY_MAP.get(spot.get("category_id", spot.get("category", "")), 0)
 
         # 거리 계산
         distance = 0.0
@@ -86,8 +86,11 @@ class FeatureBuilder:
                 spot.get("lat", 0), spot.get("lng", 0),
             )
 
-        # 혼잡도
-        crowd_level = comfort.get("crowd_level", 0.5)
+        # 혼잡도 (crowd_score: 0~100 int, 높을수록 여유 → 0~1 float로 변환)
+        raw_crowd_score = comfort.get("crowd_score", 50)
+        if raw_crowd_score is None:
+            raw_crowd_score = 50
+        crowd_level = raw_crowd_score / 100.0
 
         # 날씨
         weather = weather_data or {}

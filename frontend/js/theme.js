@@ -6,15 +6,23 @@ const Theme = (() => {
     const DARK = 'dark';
     const LIGHT = 'light';
 
+    function _getStorage(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    function _setStorage(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+    }
+
     function init() {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = _getStorage(STORAGE_KEY);
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const theme = saved || (prefersDark ? DARK : LIGHT);
         apply(theme);
 
         // Listen for OS theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (!localStorage.getItem(STORAGE_KEY)) {
+            if (!_getStorage(STORAGE_KEY)) {
                 apply(e.matches ? DARK : LIGHT);
             }
         });
@@ -29,7 +37,7 @@ const Theme = (() => {
     function toggle() {
         const current = document.documentElement.getAttribute('data-theme');
         const next = current === DARK ? LIGHT : DARK;
-        localStorage.setItem(STORAGE_KEY, next);
+        _setStorage(STORAGE_KEY, next);
         apply(next);
     }
 

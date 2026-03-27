@@ -30,10 +30,31 @@ const I18n = (() => {
         return translations[key] || key;
     }
 
+    // Whitelist of safe inline HTML tags allowed in translations
+    const SAFE_TAG_RE = /<(br|strong|em|b|i|u|span)\b[^>]*\/?>/i;
+
+    /**
+     * Sanitize translation value: strip all tags except whitelisted ones.
+     * Prevents XSS when using innerHTML for translations containing safe tags.
+     */
+    function _sanitizeI18nVal(val) {
+        return val.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/gi, (match, tag) => {
+            const allowed = ['br', 'strong', 'em', 'b', 'i', 'u', 'span'];
+            return allowed.includes(tag.toLowerCase()) ? match : '';
+        });
+    }
+
     function apply() {
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
-            if (translations[key]) el.textContent = translations[key];
+            if (!translations[key]) return;
+            const val = translations[key];
+            // Use innerHTML for values with safe inline tags, with sanitization
+            if (SAFE_TAG_RE.test(val)) {
+                el.innerHTML = _sanitizeI18nVal(val);
+            } else {
+                el.textContent = val;
+            }
         });
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             const key = el.getAttribute('data-i18n-placeholder');

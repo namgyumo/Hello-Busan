@@ -15,7 +15,7 @@ COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 COPY sql/ ./sql/
 
-# ML 모델 데이터 (없어도 빌드 가능)
+# ML 모델 데이터 (ml_data/ 디렉토리에 .gitkeep이 있으므로 COPY 가능)
 COPY ml_data/ ./ml_data/
 
 # 환경변수

@@ -3,7 +3,7 @@
 """
 from pydantic import BaseModel
 from typing import Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Meta(BaseModel):
@@ -16,7 +16,7 @@ class Meta(BaseModel):
 
     def __init__(self, **data):
         if not data.get("timestamp"):
-            data["timestamp"] = datetime.utcnow().isoformat() + "Z"
+            data["timestamp"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         super().__init__(**data)
 
 

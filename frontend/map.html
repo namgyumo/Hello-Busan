@@ -87,13 +87,13 @@
 
     <!-- Category Filter -->
     <nav class="category-bar" id="category-bar" aria-label="카테고리 필터">
-        <button class="category-chip active" data-category="">전체</button>
-        <button class="category-chip" data-category="nature">&#x1F3D4; 자연</button>
-        <button class="category-chip" data-category="culture">&#x1F3DB; 문화</button>
-        <button class="category-chip" data-category="food">&#x1F35C; 맛집</button>
-        <button class="category-chip" data-category="activity">&#x1F3C4; 액티비티</button>
-        <button class="category-chip" data-category="shopping">&#x1F6CD; 쇼핑</button>
-        <button class="category-chip" data-category="nightview">&#x1F319; 야경</button>
+        <button class="category-chip active" data-category="" data-i18n="category_short_all">전체</button>
+        <button class="category-chip" data-category="nature">&#x1F3D4; <span data-i18n="category_short_nature">자연</span></button>
+        <button class="category-chip" data-category="culture">&#x1F3DB; <span data-i18n="category_short_culture">문화</span></button>
+        <button class="category-chip" data-category="food">&#x1F35C; <span data-i18n="category_short_food">맛집</span></button>
+        <button class="category-chip" data-category="activity">&#x1F3C4; <span data-i18n="category_short_activity">액티비티</span></button>
+        <button class="category-chip" data-category="shopping">&#x1F6CD; <span data-i18n="category_short_shopping">쇼핑</span></button>
+        <button class="category-chip" data-category="nightview">&#x1F319; <span data-i18n="category_short_nightview">야경</span></button>
     </nav>
 
     <!-- Fallback Banner -->
@@ -103,8 +103,21 @@
     <main class="main-layout">
         <div class="map-container">
             <div id="map"></div>
-            <button id="btn-heatmap-toggle" class="map-toggle" data-i18n="heatmap_on">히트맵 ON</button>
-            <button id="btn-course" class="map-toggle course-btn" data-i18n="course_create">코스 만들기</button>
+            <!-- Map Loading Overlay -->
+            <div id="map-loading" class="map-loading-overlay" aria-live="polite">
+                <div class="map-loading-spinner"></div>
+                <span class="map-loading-text" data-i18n="map_loading">지도를 불러오는 중...</span>
+            </div>
+            <div class="map-controls">
+                <button id="btn-heatmap-toggle" class="map-ctrl-btn map-ctrl-btn--heatmap active" aria-label="히트맵 토글" title="히트맵 ON/OFF">
+                    <span class="map-ctrl-btn__icon" aria-hidden="true">&#x1F525;</span>
+                    <span class="map-ctrl-btn__label" data-i18n="heatmap_on">히트맵 ON</span>
+                </button>
+                <button id="btn-course" class="map-ctrl-btn map-ctrl-btn--course">
+                    <span class="map-ctrl-btn__icon" aria-hidden="true">&#x1F5FA;</span>
+                    <span class="map-ctrl-btn__label" data-i18n="course_create">코스 만들기</span>
+                </button>
+            </div>
             <div id="course-map-notice" class="course-map-notice" style="display:none"></div>
         </div>
 
@@ -112,15 +125,24 @@
         <div class="map-list-handle" id="map-list-handle" aria-label="지도/리스트 전환">
             <div class="map-list-handle__bar"></div>
             <div class="map-list-handle__tabs">
-                <button class="map-list-handle__tab active" data-view="default" data-i18n="view_split">기본</button>
-                <button class="map-list-handle__tab" data-view="map" data-i18n="nav_map">지도</button>
-                <button class="map-list-handle__tab" data-view="list" data-i18n="nav_recommend">리스트</button>
+                <button class="map-list-handle__tab active" data-view="default">
+                    <span class="map-list-handle__icon" aria-hidden="true">&#x25A8;</span> <span data-i18n="view_split">기본</span>
+                </button>
+                <button class="map-list-handle__tab" data-view="map">
+                    <span class="map-list-handle__icon" aria-hidden="true">&#x1F5FA;</span> <span data-i18n="view_map">지도</span>
+                </button>
+                <button class="map-list-handle__tab" data-view="list">
+                    <span class="map-list-handle__icon" aria-hidden="true">&#x1F4CB;</span> <span data-i18n="view_list">리스트</span>
+                </button>
             </div>
         </div>
 
         <div class="spot-list-container">
             <div class="spot-list-header">
-                <h2 class="spot-list-title" data-i18n="nav_recommend">추천 관광지</h2>
+                <div class="spot-list-header__row">
+                    <h2 class="spot-list-title" data-i18n="nav_recommend">추천 관광지</h2>
+                    <span id="spot-count" class="spot-count" style="display:none"></span>
+                </div>
                 <p class="spot-list-desc" data-i18n="recommend_desc">선호하는 테마를 바탕으로 추천합니다</p>
             </div>
             <div id="spot-list" class="spot-list">
@@ -133,6 +155,9 @@
             <div id="sse-status" class="sse-status" data-i18n="sse_connected">실시간 쾌적함 지수(SSE) 연동 중</div>
         </div>
     </main>
+
+    <!-- Course Panel Backdrop -->
+    <div class="course-overlay" id="course-overlay"></div>
 
     <!-- Course Planner Panel -->
     <aside id="course-panel" class="course-panel" aria-label="코스 플래너">
@@ -178,12 +203,12 @@
                 <div class="course-field">
                     <label class="course-field__label" data-i18n="course_categories">선호 카테고리</label>
                     <div class="course-cat-group">
-                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="nature"><span>&#x1F3D4; 자연</span></label>
-                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="culture"><span>&#x1F3DB; 문화</span></label>
-                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="food"><span>&#x1F35C; 맛집</span></label>
-                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="activity"><span>&#x1F3C4; 액티비티</span></label>
-                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="shopping"><span>&#x1F6CD; 쇼핑</span></label>
-                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="nightview"><span>&#x1F319; 야경</span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="nature"><span>&#x1F3D4; <span data-i18n="category_short_nature">자연</span></span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="culture"><span>&#x1F3DB; <span data-i18n="category_short_culture">문화</span></span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="food"><span>&#x1F35C; <span data-i18n="category_short_food">맛집</span></span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="activity"><span>&#x1F3C4; <span data-i18n="category_short_activity">액티비티</span></span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="shopping"><span>&#x1F6CD; <span data-i18n="category_short_shopping">쇼핑</span></span></label>
+                        <label class="course-cat"><input type="checkbox" class="course-cat-check" value="nightview"><span>&#x1F319; <span data-i18n="category_short_nightview">야경</span></span></label>
                     </div>
                 </div>
 

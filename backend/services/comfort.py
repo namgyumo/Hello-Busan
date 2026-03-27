@@ -31,6 +31,19 @@ def _get_grade(score: int) -> str:
     return "매우혼잡"
 
 
+def _get_crowd_level(crowd_score: int) -> str:
+    """crowd_score(0=혼잡, 100=여유) -> 혼잡도 등급 텍스트"""
+    if crowd_score is None:
+        return "보통"
+    if crowd_score >= 70:
+        return "여유"
+    if crowd_score >= 40:
+        return "보통"
+    if crowd_score >= 20:
+        return "혼잡"
+    return "매우혼잡"
+
+
 class ComfortService:
     """쾌적함 지수 서비스"""
 
@@ -98,13 +111,14 @@ class ComfortService:
             for data in (comfort.data or []):
                 sid = str(data.get("spot_id", ""))
                 score = data.get("total_score", 0)
+                crowd_score = data.get("crowd_score", 50)
                 result[sid] = {
                     "total_score": score,
                     "grade": _get_grade(score),
                     "weather_score": data.get("weather_score"),
-                    "crowd_score": data.get("crowd_score"),
+                    "crowd_score": crowd_score,
                     "transport_score": data.get("transport_score"),
-                    "crowd_level": data.get("grade", "보통"),
+                    "crowd_level": _get_crowd_level(crowd_score),
                 }
 
             return result

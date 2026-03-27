@@ -8,18 +8,26 @@ const PWA = (() => {
     const VISIT_KEY = 'pwa_visit_count';
     const INSTALLED_KEY = 'pwa_installed';
 
+    function _getStorage(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    function _setStorage(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+    }
+
     function getVisitCount() {
-        return parseInt(localStorage.getItem(VISIT_KEY) || '0', 10);
+        return parseInt(_getStorage(VISIT_KEY) || '0', 10);
     }
 
     function incrementVisit() {
         const count = getVisitCount() + 1;
-        localStorage.setItem(VISIT_KEY, String(count));
+        _setStorage(VISIT_KEY, String(count));
         return count;
     }
 
     function isInstalled() {
-        return localStorage.getItem(INSTALLED_KEY) === 'true' ||
+        return _getStorage(INSTALLED_KEY) === 'true' ||
             window.matchMedia('(display-mode: standalone)').matches ||
             navigator.standalone === true;
     }
@@ -78,7 +86,7 @@ const PWA = (() => {
         const { outcome } = await deferredPrompt.userChoice;
 
         if (outcome === 'accepted') {
-            localStorage.setItem(INSTALLED_KEY, 'true');
+            _setStorage(INSTALLED_KEY, 'true');
             showToast(typeof I18n !== 'undefined' ? I18n.t('pwa_installed') : '설치해 주셔서 감사합니다!');
         }
 
@@ -111,7 +119,7 @@ const PWA = (() => {
         });
 
         window.addEventListener('appinstalled', () => {
-            localStorage.setItem(INSTALLED_KEY, 'true');
+            _setStorage(INSTALLED_KEY, 'true');
             deferredPrompt = null;
             const banner = document.getElementById('pwa-install-banner');
             if (banner) banner.classList.remove('pwa-install-banner--visible');

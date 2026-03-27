@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # 앱 설정
     APP_ENV: str = "development"
     APP_PORT: int = 8000
-    DEBUG: bool = True
+    DEBUG: bool = False
     SECRET_KEY: str = "dev-secret-key"
 
     # Supabase

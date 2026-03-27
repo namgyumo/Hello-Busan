@@ -8,7 +8,7 @@ from backend.collector.base import BaseCollector
 from backend.db.supabase import get_supabase
 from backend.config import settings
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class TransportCollector(BaseCollector):
     async def _get_spot_list(self) -> List[Dict]:
         """관광지 목록 조회"""
         sb = get_supabase()
-        result = sb.table("tourist_spots").select("id, name, lat, lng").execute()
+        result = sb.table("tourist_spots").select("id, name, lat, lng").eq("is_active", True).execute()
         return result.data or []
 
     async def _collect_nearby_transport(
@@ -54,6 +54,8 @@ class TransportCollector(BaseCollector):
             "numOfRows": "10",
             "pageNo": "1",
             "_type": "json",
+            "gpsLati": str(spot.get("lat", 0)),
+            "gpsLong": str(spot.get("lng", 0)),
         }
 
         body = await self.fetch(
@@ -89,7 +91,7 @@ class TransportCollector(BaseCollector):
             "nearest_station": nearest_station,
             "bus_routes": [s.get("name", "") for s in stations],
             "transit_score": transit_score,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     def _calc_accessibility(self, stations: List[Dict]) -> int:

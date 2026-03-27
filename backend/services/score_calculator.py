@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from backend.db.supabase import get_supabase
 from backend.services.comfort import ComfortService, COMFORT_WEIGHTS, _get_grade
 from backend.regions import REGION_GRID
-from datetime import datetime
+from datetime import datetime, timezone
 import math
 import logging
 
@@ -46,7 +46,7 @@ class ScoreCalculator:
 
         # 5) 각 관광지별 종합 점수 계산 + 저장
         updated = 0
-        now = datetime.now().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
 
         for spot in spots.data:
             spot_id = str(spot["id"])

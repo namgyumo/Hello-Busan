@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_LANGUAGES = ["ko", "en", "ja", "zh", "ru"]
 DEFAULT_LANGUAGE = "ko"
-LOCALES_DIR = Path("frontend/locales")
+LOCALES_DIR = Path(__file__).parent.parent.parent / "frontend" / "locales"
 
 
 class I18nService:

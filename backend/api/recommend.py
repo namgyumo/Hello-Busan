@@ -11,6 +11,7 @@ from backend.services.comfort import ComfortService
 from backend.services.location import LocationService
 from backend.cache.manager import CacheManager
 from backend.db.supabase import get_supabase
+from backend.services.i18n import I18nService
 import logging
 
 router = APIRouter(prefix="/api/v1/recommend", tags=["recommend"])
@@ -21,6 +22,7 @@ feature_builder = FeatureBuilder()
 fallback = FallbackRecommender()
 comfort_service = ComfortService()
 location_service = LocationService()
+i18n_service = I18nService()
 
 
 @router.get("")
@@ -54,9 +56,9 @@ async def get_recommendations(
                 query = query.in_("category_id", cat_list)
 
         if search and search.strip():
-            keyword = search.strip()
+            keyword = search.strip().replace("%", "").replace("\\", "")
             query = query.or_(
-                f"name.ilike.%{keyword}%,name_en.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
             )
 
         spots_result = query.execute()
@@ -116,13 +118,17 @@ async def get_recommendations(
         items = []
         for rank, (s, score) in enumerate(top_spots, offset + 1):
             comfort = comfort_data.get(str(s.get("id")), {})
-            reasons = _build_reasons(s, comfort)
+            reasons = _build_reasons(s, comfort, lang)
+
+            raw_images = s.get("images", []) if isinstance(s.get("images"), list) else []
+            thumbnail = raw_images[0] if raw_images else ""
 
             items.append({
                 "rank": rank,
                 "id": str(s.get("id", "")),
                 "name": s.get("name", ""),
                 "category": s.get("category_id", ""),
+                "address": s.get("address", ""),
                 "recommend_score": round(float(score), 2),
                 "comfort_score": comfort.get("total_score"),
                 "comfort_grade": comfort.get("grade"),
@@ -130,7 +136,8 @@ async def get_recommendations(
                 "lng": s.get("lng"),
                 "distance_km": round(s.get("distance_km", 0), 1) if s.get("distance_km") else None,
                 "reasons": reasons,
-                "thumbnail_url": s.get("images", [""])[0] if isinstance(s.get("images"), list) and s.get("images") else "",
+                "thumbnail_url": thumbnail,
+                "images": raw_images,
             })
 
         response = SuccessResponse(
@@ -151,12 +158,12 @@ async def get_recommendations(
         raise HTTPException(status_code=500, detail="추천 생성 중 오류 발생")
 
 
-def _build_reasons(spot: dict, comfort: dict) -> list:
-    """추천 이유 문자열 생성"""
+def _build_reasons(spot: dict, comfort: dict, lang: str = "ko") -> list:
+    """추천 이유 문자열 생성 (다국어 지원)"""
     reasons = []
-    grade = comfort.get("grade", "")
-    if grade in ("쾌적",):
-        reasons.append("혼잡도 낮음")
+    crowd_score = comfort.get("crowd_score")
+    if crowd_score is not None and crowd_score >= 80:
+        reasons.append(i18n_service.translate("reason_low_crowd", lang))
     if spot.get("distance_km") and spot["distance_km"] < 3:
-        reasons.append("가까운 거리")
+        reasons.append(i18n_service.translate("reason_nearby", lang))
     return reasons

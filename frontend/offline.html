@@ -4,94 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>오프라인 — Hello, Busan!</title>
+    <meta name="description" content="오프라인 상태입니다 — Hello, Busan!">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .offline-page {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-            padding: 2rem;
-            text-align: center;
-        }
-        .offline-page__icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            opacity: 0.7;
-        }
-        .offline-page__title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--color-text);
-            margin-bottom: 0.75rem;
-        }
-        .offline-page__desc {
-            font-size: 1rem;
-            color: var(--color-text-secondary);
-            margin-bottom: 2rem;
-            max-width: 360px;
-            line-height: 1.6;
-        }
-        .offline-page__btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: var(--color-primary);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-full);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background var(--transition);
-        }
-        .offline-page__btn:hover {
-            background: var(--color-primary-dark);
-        }
-        .offline-page__favorites {
-            margin-top: 2rem;
-            width: 100%;
-            max-width: 400px;
-        }
-        .offline-page__favorites-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--color-text);
-            margin-bottom: 0.75rem;
-        }
-        .offline-page__fav-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .offline-page__fav-item {
-            display: block;
-            padding: 0.75rem 1rem;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-sm);
-            margin-bottom: 0.5rem;
-            color: var(--color-text);
-            text-decoration: none;
-            transition: background var(--transition);
-        }
-        .offline-page__fav-item:hover {
-            background: var(--color-primary-light);
-        }
-    </style>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <meta name="theme-color" content="#0066CC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
 </head>
-<body>
+<body class="page-offline">
     <header class="header" role="banner">
         <a href="/" class="header__logo" aria-label="Hello, Busan! 홈으로">Hello, Busan!</a>
+        <div class="header__actions">
+            <button id="theme-toggle" class="theme-toggle" aria-label="다크모드 전환">
+                <span class="theme-toggle__icon" aria-hidden="true">&#x2600;</span>
+            </button>
+            <select id="lang-select" class="lang-select" aria-label="Language">
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
     </header>
 
     <main class="offline-page">
         <div class="offline-page__icon" aria-hidden="true">&#x1F4F5;</div>
         <h1 class="offline-page__title" data-i18n="offline_title">오프라인 상태입니다</h1>
         <p class="offline-page__desc" data-i18n="offline_desc">인터넷 연결이 없습니다. 저장된 즐겨찾기 관광지는 아래에서 확인할 수 있습니다.</p>
-        <button class="offline-page__btn" onclick="window.location.reload()">
+        <button class="offline-page__btn" id="btn-retry">
             <span aria-hidden="true">&#x1F504;</span>
             <span data-i18n="offline_retry">다시 시도</span>
         </button>
@@ -102,12 +46,34 @@
         </div>
     </main>
 
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" role="navigation" aria-label="메인 메뉴">
+        <a href="/" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F3E0;</span>
+            <span class="bottom-nav__label" data-i18n="nav_home">홈</span>
+        </a>
+        <a href="/map.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
+            <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/favorites.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
+            <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
+        </a>
+    </nav>
+
     <script src="/js/i18n.js"></script>
     <script src="/js/theme.js"></script>
     <script src="/js/offline-store.js"></script>
     <script>
         (async () => {
             try { await I18n.init(); } catch(e) {}
+
+            // Retry button
+            const retryBtn = document.getElementById('btn-retry');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => window.location.reload());
+            }
 
             try {
                 const spots = await OfflineStore.getAllSpots();

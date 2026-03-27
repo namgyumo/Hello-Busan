@@ -2,13 +2,14 @@
 관광지 API 라우터 — API 설계서 API-001, API-002, API-003
 """
 from fastapi import APIRouter, Query, HTTPException
-from typing import Optional
+from typing import Optional, List
 from backend.models.common import SuccessResponse, Meta
 from backend.models.spot import SpotResponse, SpotDetail, CategoryItem
 from backend.db.supabase import get_supabase
 from backend.cache.manager import CacheManager
 from backend.services.comfort import ComfortService
 from backend.services.location import LocationService
+from backend.collector.tourism import TourismCollector
 from datetime import datetime
 import logging
 
@@ -57,9 +58,9 @@ async def get_spots(
             else:
                 count_query = count_query.in_("category_id", categories)
         if search and search.strip():
-            keyword = search.strip()
+            keyword = search.strip().replace("%", "").replace("\\", "")
             count_query = count_query.or_(
-                f"name.ilike.%{keyword}%,name_en.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
             )
 
         count_result = count_query.execute()
@@ -76,9 +77,16 @@ async def get_spots(
                 query = query.in_("category_id", categories)
 
         if search and search.strip():
-            keyword = search.strip()
+            keyword = search.strip().replace("%", "").replace("\\", "")
             query = query.or_(
-                f"name.ilike.%{keyword}%,name_en.ilike.%{keyword}%,address.ilike.%{keyword}%"
+                f"name.ilike.%{keyword}%,address.ilike.%{keyword}%"
+            )
+
+        # lat/lng 중 하나만 제공된 경우 에러 반환
+        if (lat is not None) != (lng is not None):
+            raise HTTPException(
+                status_code=400,
+                detail="lat과 lng는 함께 제공해야 합니다",
             )
 
         # 위치 기반인 경우 전체 조회 후 필터링, 아닌 경우 페이지네이션 적용
@@ -90,7 +98,7 @@ async def get_spots(
             total_count = len(spots_data)
             spots_data = spots_data[offset:offset + limit]
         else:
-            result = query.range(offset, offset + limit).execute()
+            result = query.range(offset, offset + limit - 1).execute()
             spots_data = result.data or []
 
         # 쾌적함 지수 병합
@@ -127,9 +135,11 @@ async def get_spots(
         await cache.set(cache_key, response.model_dump(), ttl=300)
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"관광지 조회 실패: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="관광지 조회 중 오류 발생")
 
 
 @router.get("/categories")
@@ -199,19 +209,19 @@ async def get_spot_detail(
 
     try:
         sb = get_supabase()
-        result = sb.table("tourist_spots").select("*").eq("id", spot_id).single().execute()
+        result = sb.table("tourist_spots").select("*").eq("id", spot_id).limit(1).execute()
 
         if not result.data:
             raise HTTPException(status_code=404, detail="관광지를 찾을 수 없습니다")
 
-        s = result.data
+        s = result.data[0]
 
         # 쾌적함 지수
         comfort = await comfort_service.get_comfort(spot_id)
 
         # 주변 관광지 (반경 3km)
         all_spots = sb.table("tourist_spots").select("id, name, lat, lng").eq("is_active", True).execute()
-        nearby = []
+        nearby_candidates = []
         if all_spots.data:
             for ns in all_spots.data:
                 if str(ns["id"]) == spot_id:
@@ -221,9 +231,19 @@ async def get_spot_detail(
                     ns.get("lat", 0), ns.get("lng", 0),
                 )
                 if dist <= 3.0:
-                    nearby.append({"id": str(ns["id"]), "name": ns["name"], "distance_km": round(dist, 1)})
-            nearby.sort(key=lambda x: x["distance_km"])
-            nearby = nearby[:3]
+                    nearby_candidates.append({"id": str(ns["id"]), "name": ns["name"], "distance_km": round(dist, 1)})
+            nearby_candidates.sort(key=lambda x: x["distance_km"])
+            nearby_candidates = nearby_candidates[:3]
+
+        # 주변 관광지 쾌적함 지수 조회
+        nearby_ids = [n["id"] for n in nearby_candidates]
+        nearby_comfort = await comfort_service.get_bulk_comfort(nearby_ids) if nearby_ids else {}
+        nearby = []
+        for n in nearby_candidates:
+            nc = nearby_comfort.get(n["id"], {})
+            n["comfort_score"] = nc.get("total_score")
+            n["comfort_grade"] = nc.get("grade")
+            nearby.append(n)
 
         detail = {
             "id": str(s.get("id", "")),
@@ -249,4 +269,169 @@ async def get_spot_detail(
         raise
     except Exception as e:
         logger.error(f"관광지 상세 조회 실패: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="관광지 상세 조회 중 오류 발생")
+
+
+# 음식점 카테고리 ID (TourAPI contentTypeId=39)
+FOOD_CATEGORIES = {"food"}
+
+# 가격대 분류 기준 (원)
+PRICE_THRESHOLDS = {"low": 10000, "mid": 25000}
+
+
+def _classify_price(price: int) -> str:
+    """가격대 분류: low / mid / high"""
+    if price <= PRICE_THRESHOLDS["low"]:
+        return "low"
+    if price <= PRICE_THRESHOLDS["mid"]:
+        return "mid"
+    return "high"
+
+
+def _parse_menu_text(raw_menu: str) -> List[dict]:
+    """
+    TourAPI detailIntro2의 음식점 대표메뉴(firstmenu) 및
+    취급메뉴(treatmenu) 텍스트를 파싱하여 메뉴 리스트로 변환.
+    형식 예시: "밀면 7,000원 / 비빔밀면 7,000원" 또는 줄바꿈 구분
+    """
+    if not raw_menu:
+        return []
+
+    import re
+    # <br>, <br/>, 줄바꿈, / 등을 구분자로 사용
+    separators = re.split(r'<br\s*/?>|\n|/|,\s*(?=[가-힣a-zA-Z])', raw_menu)
+    menus = []
+
+    for item in separators:
+        item = re.sub(r'<[^>]+>', '', item).strip()
+        if not item:
+            continue
+
+        # "메뉴명 가격원" 패턴 매칭
+        price_match = re.search(r'(\d[\d,]*)\s*원', item)
+        if price_match:
+            price_str = price_match.group(1).replace(',', '')
+            price = int(price_str)
+            name = item[:price_match.start()].strip().rstrip('-').strip()
+            if not name:
+                continue
+            menus.append({
+                "name": name,
+                "price": price,
+                "price_range": _classify_price(price),
+                "is_signature": len(menus) == 0,
+            })
+        else:
+            # 가격 없이 메뉴명만 있는 경우
+            if item and len(item) < 50:
+                menus.append({
+                    "name": item,
+                    "price": None,
+                    "price_range": None,
+                    "is_signature": len(menus) == 0,
+                })
+
+    return menus
+
+
+@router.get("/{spot_id}/menu")
+async def get_spot_menu(
+    spot_id: str,
+    price_range: Optional[str] = Query(None, description="가격대 필터 (low/mid/high)"),
+    lang: str = Query("ko"),
+):
+    """맛집 메뉴/가격 정보 조회"""
+    cache_key = f"spot_menu:{spot_id}:{price_range}:{lang}"
+    cached = await cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        sb = get_supabase()
+        result = sb.table("tourist_spots").select(
+            "id, name, category_id, external_id"
+        ).eq("id", spot_id).limit(1).execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="관광지를 찾을 수 없습니다")
+
+        spot = result.data[0]
+
+        if spot.get("category_id") not in FOOD_CATEGORIES:
+            return SuccessResponse(data={
+                "spot_id": str(spot["id"]),
+                "is_restaurant": False,
+                "menus": [],
+                "summary": None,
+            })
+
+        # TourAPI detailIntro2에서 메뉴 정보 수집
+        menus = []
+        external_id = spot.get("external_id")
+        content_type_id = "39"  # 음식점 contentTypeId
+
+        if external_id:
+            try:
+                collector = TourismCollector()
+                body = await collector.fetch("/detailIntro2", params={
+                    "contentId": external_id,
+                    "contentTypeId": content_type_id,
+                    "MobileOS": "ETC",
+                    "MobileApp": "HelloBusan",
+                    "_type": "json",
+                })
+                await collector.close()
+
+                if body:
+                    items_wrapper = body.get("items", {})
+                    items = items_wrapper.get("item", []) if isinstance(items_wrapper, dict) else []
+                    if isinstance(items, dict):
+                        items = [items]
+
+                    if items:
+                        item = items[0]
+                        # firstmenu: 대표메뉴, treatmenu: 취급메뉴
+                        first_menu = item.get("firstmenu", "")
+                        treat_menu = item.get("treatmenu", "")
+
+                        raw_text = first_menu
+                        if treat_menu and treat_menu != first_menu:
+                            raw_text = f"{first_menu} / {treat_menu}" if raw_text else treat_menu
+
+                        menus = _parse_menu_text(raw_text)
+            except Exception as e:
+                logger.warning(f"메뉴 수집 실패 [{spot_id}]: {e}")
+
+        # 가격대 필터 적용
+        if price_range and price_range in ("low", "mid", "high"):
+            menus = [m for m in menus if m.get("price_range") == price_range]
+
+        # 가격 요약 정보
+        prices = [m["price"] for m in menus if m.get("price")]
+        summary = None
+        if prices:
+            avg_price = round(sum(prices) / len(prices))
+            summary = {
+                "avg_price": avg_price,
+                "min_price": min(prices),
+                "max_price": max(prices),
+                "price_range": _classify_price(avg_price),
+                "menu_count": len(menus),
+            }
+
+        response_data = {
+            "spot_id": str(spot["id"]),
+            "is_restaurant": True,
+            "menus": menus,
+            "summary": summary,
+        }
+
+        response = SuccessResponse(data=response_data)
+        await cache.set(cache_key, response.model_dump(), ttl=3600)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"메뉴 조회 실패: {e}")
+        raise HTTPException(status_code=500, detail="메뉴 조회 중 오류 발생")
