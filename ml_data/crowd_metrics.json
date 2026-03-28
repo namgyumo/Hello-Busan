@@ -1,0 +1,17 @@
+{
+  "mae": 0.1368,
+  "r2": 0.9996,
+  "train_size": 2272665,
+  "test_size": 568167,
+  "features": [
+    "hour",
+    "day_of_week",
+    "is_weekend",
+    "month",
+    "station_id",
+    "alighting_count",
+    "boarding_count",
+    "population_flow"
+  ],
+  "total_stations": 111
+}

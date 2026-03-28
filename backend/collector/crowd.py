@@ -2,6 +2,7 @@
 혼잡도 데이터 수집기
 - 부산 관광지 실시간 혼잡도 추정
 - 지하철 승하차 실데이터 기반 + 시간/요일/시즌 보정
+- XGBoost 혼잡도 예측 모델 블렌딩 (모델 있을 때 60%, 기존 룰 40%)
 """
 from typing import Dict, List, Optional
 from backend.collector.base import BaseCollector
@@ -15,6 +16,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# XGBoost 혼잡도 예측기 (lazy 로드)
+_crowd_predictor = None
+
+
+def _get_crowd_predictor():
+    """CrowdPredictor 싱글턴 (모델 없으면 None)"""
+    global _crowd_predictor
+    if _crowd_predictor is None:
+        try:
+            from backend.ml.crowd_predictor import CrowdPredictor
+            _crowd_predictor = CrowdPredictor()
+            if not _crowd_predictor.is_loaded:
+                logger.info("혼잡도 XGBoost 모델 미로드 — 룰 기반 폴백")
+                _crowd_predictor = False  # 로드 실패 마커
+        except Exception as e:
+            logger.warning(f"CrowdPredictor 초기화 실패: {e}")
+            _crowd_predictor = False
+    return _crowd_predictor if _crowd_predictor is not False else None
 
 # 지하철 승하차 데이터 (전처리 결과)
 _SUBWAY_DATA: Optional[Dict] = None
@@ -170,8 +190,13 @@ class CrowdCollector(BaseCollector):
 
     def _estimate_crowd(self, spot: Dict, now: datetime) -> Dict:
         """
-        혼잡도 추정 (지하철 실데이터 + 시간/요일/시즌/카테고리 보정)
+        혼잡도 추정 (XGBoost 예측 + 지하철 실데이터 + 시간/요일/시즌/카테고리 보정)
         crowd_level: 0.0(여유) ~ 1.0(매우혼잡)
+
+        블렌딩 우선순위:
+        1) XGBoost 모델 있음 → XGBoost(60%) + 룰 기반(40%)
+        2) 모델 없음, 지하철 데이터 있음 → 지하철(70%) + 규칙(30%)
+        3) 둘 다 없음 → 규칙 기반 100%
         """
         hour = now.hour
         weekday = now.weekday()
@@ -179,10 +204,19 @@ class CrowdCollector(BaseCollector):
         category = spot.get("category_id", "nature")
         spot_name = spot.get("name", "")
 
+        # XGBoost 혼잡도 예측 시도
+        xgb_score = self._get_xgboost_crowd(spot_name, hour, weekday, month)
+
         # 지하철 실데이터 기반 시간대 혼잡도 조회
         subway_base = self._get_subway_crowd(spot_name, hour, weekday)
 
-        if subway_base is not None:
+        if xgb_score is not None:
+            # XGBoost 모델 예측 성공: XGBoost(60%) + 룰 기반(40%)
+            rule_base = HOUR_WEIGHTS.get(hour, 0.5)
+            xgb_normalized = xgb_score / 100.0  # 0-100 → 0-1
+            base = xgb_normalized * 0.6 + rule_base * 0.4
+            source_type = "xgboost"
+        elif subway_base is not None:
             # 실데이터 있음: 지하철 데이터(70%) + 규칙 기반(30%) 블렌딩
             rule_base = HOUR_WEIGHTS.get(hour, 0.5)
             base = subway_base * 0.7 + rule_base * 0.3
@@ -192,8 +226,8 @@ class CrowdCollector(BaseCollector):
             base = HOUR_WEIGHTS.get(hour, 0.5)
             source_type = "estimation"
 
-        # 요일 보정 (지하철 데이터는 이미 평일/주말 구분이므로 보정 축소)
-        if subway_base is not None:
+        # 요일 보정 (XGBoost/지하철 데이터는 이미 요일 반영됨)
+        if xgb_score is not None or subway_base is not None:
             day_mult = 1.0  # 이미 요일 반영됨
         else:
             day_mult = DAY_MULTIPLIER.get(weekday, 1.0)
@@ -243,6 +277,23 @@ class CrowdCollector(BaseCollector):
             "source": source_type,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
+    def _get_xgboost_crowd(
+        self, spot_name: str, hour: int, weekday: int, month: int,
+    ) -> Optional[float]:
+        """
+        XGBoost 모델로 혼잡도 예측
+        Returns: 0-100 점수, 모델 없거나 예측 불가 시 None
+        """
+        predictor = _get_crowd_predictor()
+        if predictor is None:
+            return None
+
+        station = self._find_station_for_spot(spot_name)
+        if not station:
+            return None
+
+        return predictor.predict(station, hour, weekday, month)
 
     def _get_subway_crowd(self, spot_name: str, hour: int, weekday: int) -> Optional[float]:
         """

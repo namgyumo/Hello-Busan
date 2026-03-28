@@ -296,6 +296,32 @@ def create_app() -> FastAPI:
             "comfort_recalculated": recalced,
         }
 
+    @app.post("/api/v1/admin/train-crowd")
+    async def train_crowd_model(request: Request):
+        """XGBoost 혼잡도 예측 모델 학습 트리거 (관리용)
+
+        Dataset/ 지하철 승하차 CSV + 인구이동 CSV로
+        혼잡도 예측 모델을 학습하고 ml_data/crowd_model.joblib에 저장.
+        학습 완료 후 CrowdPredictor 리로드.
+        """
+        _verify_admin(request)
+        from backend.ml.crowd_trainer import CrowdTrainer
+
+        trainer = CrowdTrainer()
+        result = trainer.run_pipeline()
+
+        # 학습 성공 시 CrowdPredictor 리로드
+        if result.get("status") == "success":
+            try:
+                from backend.collector.crowd import _crowd_predictor, _get_crowd_predictor
+                import backend.collector.crowd as crowd_module
+                crowd_module._crowd_predictor = None  # 리셋하여 다음 호출 시 재로드
+            except Exception:
+                pass
+            await cache.clear()
+
+        return result
+
     @app.post("/api/v1/admin/train-model")
     async def train_model(request: Request):
         """XGBoost 모델 학습 트리거 (관리용)
