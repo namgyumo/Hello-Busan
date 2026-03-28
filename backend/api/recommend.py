@@ -130,11 +130,6 @@ async def get_recommendations(
             else:
                 query = query.in_("category_id", cat_list)
 
-        if search and search.strip():
-            keyword = _sanitize_keyword(search)
-            if keyword:
-                query = query.or_(f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%")
-
         # Supabase 기본 1000행 제한 우회: 페이지네이션으로 전체 조회
         all_spots = []
         page_size = 1000
@@ -146,6 +141,19 @@ async def get_recommendations(
             if len(page_data) < page_size:
                 break
             page_offset += page_size
+
+        # 검색 필터링 — Python 측에서 처리 (Supabase .or_() 버그 회피)
+        if search and search.strip():
+            keyword = _sanitize_keyword(search)
+            if keyword:
+                kw_lower = keyword.lower()
+                all_spots = [
+                    s for s in all_spots
+                    if kw_lower in (s.get("name") or "").lower()
+                    or kw_lower in (s.get("address") or "").lower()
+                    or kw_lower in (s.get("description") or "").lower()
+                ]
+
         spots = all_spots
 
         if not spots:

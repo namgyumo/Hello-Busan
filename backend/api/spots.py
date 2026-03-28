@@ -68,23 +68,7 @@ async def get_spots(
     try:
         sb = get_supabase()
 
-        # 총 개수를 위한 별도 count 쿼리
-        count_query = sb.table("tourist_spots").select("id", count="exact").eq("is_active", True)
-        if category:
-            categories = [c.strip() for c in category.split(",")]
-            if len(categories) == 1:
-                count_query = count_query.eq("category_id", categories[0])
-            else:
-                count_query = count_query.in_("category_id", categories)
-        if search and search.strip():
-            keyword = _sanitize_keyword(search)
-            if keyword:
-                count_query = count_query.or_(f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%")
-
-        count_result = count_query.execute()
-        total_count = count_result.count if hasattr(count_result, 'count') and count_result.count is not None else len(count_result.data or [])
-
-        # 실제 데이터 조회
+        # 실제 데이터 조회 (검색 시 Python 측 필터링 — Supabase .or_() 버그 회피)
         query = sb.table("tourist_spots").select("*").eq("is_active", True)
 
         if category:
@@ -94,12 +78,11 @@ async def get_spots(
             else:
                 query = query.in_("category_id", categories)
 
+        # 검색어가 있으면 전체 조회 후 Python 필터링, 없으면 기존 로직
+        keyword = ""
         if search and search.strip():
             keyword = _sanitize_keyword(search)
-            if keyword:
-                query = query.or_(f"name.ilike.%{keyword}%,address.ilike.%{keyword}%,description.ilike.%{keyword}%")
 
-        # 위치 기반인 경우 전체 조회 후 필터링, 아닌 경우 페이지네이션 적용
         if lat and lng:
             # Supabase 기본 1000행 제한 우회: 페이지네이션으로 전체 조회
             spots_data = []
@@ -112,11 +95,55 @@ async def get_spots(
                 if len(_page_data) < _page_size:
                     break
                 _page_offset += _page_size
+
+            # Python 측 검색 필터링
+            if keyword:
+                kw_lower = keyword.lower()
+                spots_data = [
+                    s for s in spots_data
+                    if kw_lower in (s.get("name") or "").lower()
+                    or kw_lower in (s.get("address") or "").lower()
+                    or kw_lower in (s.get("description") or "").lower()
+                ]
+
             spots_data = location_service.filter_by_radius(spots_data, lat, lng, radius)
             spots_data = location_service.sort_by_distance(spots_data, lat, lng)
             total_count = len(spots_data)
             spots_data = spots_data[offset:offset + limit]
+        elif keyword:
+            # 검색어 있지만 위치 없음: 전체 조회 후 Python 필터링
+            spots_data = []
+            _page_size = 1000
+            _page_offset = 0
+            while True:
+                _page_result = query.range(_page_offset, _page_offset + _page_size - 1).execute()
+                _page_data = _page_result.data or []
+                spots_data.extend(_page_data)
+                if len(_page_data) < _page_size:
+                    break
+                _page_offset += _page_size
+
+            kw_lower = keyword.lower()
+            spots_data = [
+                s for s in spots_data
+                if kw_lower in (s.get("name") or "").lower()
+                or kw_lower in (s.get("address") or "").lower()
+                or kw_lower in (s.get("description") or "").lower()
+            ]
+            total_count = len(spots_data)
+            spots_data = spots_data[offset:offset + limit]
         else:
+            # 검색어 없고 위치도 없음: 기존 페이지네이션
+            count_query = sb.table("tourist_spots").select("id", count="exact").eq("is_active", True)
+            if category:
+                cats = [c.strip() for c in category.split(",")]
+                if len(cats) == 1:
+                    count_query = count_query.eq("category_id", cats[0])
+                else:
+                    count_query = count_query.in_("category_id", cats)
+            count_result = count_query.execute()
+            total_count = count_result.count if hasattr(count_result, 'count') and count_result.count is not None else len(count_result.data or [])
+
             result = query.range(offset, offset + limit - 1).execute()
             spots_data = result.data or []
 

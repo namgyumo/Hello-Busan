@@ -136,6 +136,8 @@ class TourismCollector(BaseCollector):
             "contentId": content_id,
             "MobileOS": "ETC",
             "MobileApp": "HelloBusan",
+            "defaultYN": "Y",
+            "overviewYN": "Y",
             "_type": "json",
         }
 
