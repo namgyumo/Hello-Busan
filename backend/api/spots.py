@@ -31,6 +31,15 @@ def _sanitize_keyword(raw: str) -> str:
     return kw
 
 
+def _search_rank(spot: dict, kw_lower: str) -> int:
+    """검색 매칭 우선순위: 제목(0) > 주소(1) > 설명(2)"""
+    if kw_lower in (spot.get("name") or "").lower():
+        return 0
+    if kw_lower in (spot.get("address") or "").lower():
+        return 1
+    return 2
+
+
 CATEGORY_MAP = {
     "nature": {"name": "자연/경관", "icon": "mountain"},
     "culture": {"name": "문화/역사", "icon": "temple"},
@@ -105,6 +114,7 @@ async def get_spots(
                     or kw_lower in (s.get("address") or "").lower()
                     or kw_lower in (s.get("description") or "").lower()
                 ]
+                spots_data.sort(key=lambda s: _search_rank(s, kw_lower))
 
             spots_data = location_service.filter_by_radius(spots_data, lat, lng, radius)
             spots_data = location_service.sort_by_distance(spots_data, lat, lng)
@@ -130,6 +140,7 @@ async def get_spots(
                 or kw_lower in (s.get("address") or "").lower()
                 or kw_lower in (s.get("description") or "").lower()
             ]
+            spots_data.sort(key=lambda s: _search_rank(s, kw_lower))
             total_count = len(spots_data)
             spots_data = spots_data[offset:offset + limit]
         else:
