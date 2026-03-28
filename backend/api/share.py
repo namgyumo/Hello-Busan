@@ -1,9 +1,11 @@
 """
 SNS 공유 메타데이터 API 라우터
-OG 태그용 공유 메타데이터 반환 + AI 기반 스마트 카드 생성
+OG 태그용 공유 메타데이터 반환 + AI 기반 스마트 카드 생성 + 이미지 프록시
 """
 import json
-from fastapi import APIRouter, HTTPException
+import httpx
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import List, Optional
 from backend.models.common import SuccessResponse, Meta
@@ -33,6 +35,35 @@ CATEGORY_LABELS = {
     "shopping": "쇼핑",
     "nightview": "야경",
 }
+
+
+@router.get("/image-proxy")
+async def image_proxy(url: str = Query(..., description="원본 이미지 URL")):
+    """Canvas CORS 문제 해결을 위한 이미지 프록시"""
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="유효하지 않은 URL")
+    try:
+        client = httpx.AsyncClient(timeout=httpx.Timeout(15.0))
+        try:
+            resp = await client.get(url, follow_redirects=True)
+        finally:
+            await client.aclose()
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail="이미지 로드 실패")
+        content_type = resp.headers.get("content-type", "image/jpeg")
+        return Response(
+            content=resp.content,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"이미지 프록시 실패: {e}")
+        raise HTTPException(status_code=502, detail="이미지 프록시 실패")
 
 
 @router.get("/{spot_id}")
@@ -191,7 +222,7 @@ async def create_smart_card(req: SmartCardRequest):
         import google.generativeai as genai
 
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         image_list = "\n".join(
             f"  [{i}] {url}" for i, url in enumerate(req.images)

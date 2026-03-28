@@ -6,7 +6,7 @@
  *   - Stale While Revalidate: tourist spot images
  */
 
-const CACHE_VERSION = 'hello-busan-v7';
+const CACHE_VERSION = 'hello-busan-v8';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;

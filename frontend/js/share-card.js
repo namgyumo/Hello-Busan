@@ -10,14 +10,27 @@ const ShareCard = (() => {
 
     /**
      * 이미지를 로드하여 Promise<HTMLImageElement>로 반환
+     * 외부 이미지는 프록시를 통해 CORS 문제 해결
      */
     function _loadImage(src) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error('Image load failed: ' + src));
-            img.src = src;
+            img.onerror = () => {
+                // CORS 실패 시 백엔드 프록시를 통해 재시도
+                const proxyImg = new Image();
+                proxyImg.crossOrigin = 'anonymous';
+                proxyImg.onload = () => resolve(proxyImg);
+                proxyImg.onerror = () => reject(new Error('Image load failed: ' + src));
+                proxyImg.src = '/api/v1/share/image-proxy?url=' + encodeURIComponent(src);
+            };
+            // 외부 URL이면 바로 프록시 사용
+            if (src.startsWith('http') && !src.includes(location.hostname)) {
+                img.src = '/api/v1/share/image-proxy?url=' + encodeURIComponent(src);
+            } else {
+                img.src = src;
+            }
         });
     }
 

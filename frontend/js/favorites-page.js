@@ -5,13 +5,18 @@
     const API_BASE = '/api/v1';
     const COURSE_STORAGE_KEY = 'hello_busan_courses';
 
-    await I18n.init();
+    try { await I18n.init(); } catch(e) { console.warn('I18n init failed:', e); }
 
     // ===== Tab Management =====
     const tabFavorites = document.getElementById('fav-tab-favorites');
     const tabCourses = document.getElementById('fav-tab-courses');
     const contentFavorites = document.getElementById('fav-content-favorites');
     const contentCourses = document.getElementById('fav-content-courses');
+
+    if (!tabFavorites || !tabCourses) {
+        console.error('Tab elements not found');
+        return;
+    }
 
     let activeTab = 'favorites';
 
