@@ -618,6 +618,18 @@
         // Apply i18n alt texts on init
         _applySliderAltTexts();
 
+        // alt 텍스트로 캡션 자동 생성
+        slides.forEach(function(slide) {
+            var img = slide.querySelector('.hero-slider__img');
+            var altText = img ? img.alt : '';
+            if (altText) {
+                var caption = document.createElement('span');
+                caption.className = 'hero-slider__caption';
+                caption.textContent = altText;
+                slide.appendChild(caption);
+            }
+        });
+
         function goTo(idx) {
             slides[current].classList.remove('hero-slider__slide--active');
             if (dots[current]) {
