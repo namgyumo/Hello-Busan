@@ -150,6 +150,23 @@
         </a>
     </section>
 
+    <!-- Weather Smart Recommend -->
+    <section class="smart-recommend" id="smart-recommend-section" aria-label="날씨 맞춤 추천" style="display:none;">
+        <div class="smart-recommend__header">
+            <span class="smart-recommend__weather-icon" id="smart-rec-icon" aria-hidden="true"></span>
+            <div class="smart-recommend__header-text">
+                <h2 class="smart-recommend__title" id="smart-rec-title" data-i18n="smart_rec_title">오늘 날씨에 딱 맞는 곳</h2>
+                <p class="smart-recommend__message" id="smart-rec-message"></p>
+                <p class="smart-recommend__temp" id="smart-rec-temp"></p>
+            </div>
+        </div>
+        <div class="smart-recommend__scroll">
+            <div class="smart-recommend__list" id="smart-rec-list">
+                <!-- JS로 렌더링 -->
+            </div>
+        </div>
+    </section>
+
     <!-- Air Quality Info -->
     <section class="air-quality" id="air-quality-section" aria-label="대기질 정보" style="display:none;">
         <div class="air-quality__header">
@@ -195,6 +212,30 @@
             </div>
             <div class="forecast-detail__body" id="forecast-detail-body"></div>
             <div class="forecast-detail__spots" id="forecast-detail-spots"></div>
+        </div>
+    </section>
+
+    <!-- This Week Festivals -->
+    <section class="home-section" id="this-week-festivals-section" aria-labelledby="section-this-week-festivals" style="display:none;">
+        <div class="home-section__header">
+            <h2 class="home-section__title" id="section-this-week-festivals" data-i18n="home_this_week_festivals">&#x1F389; &#xC774;&#xBC88; &#xC8FC; &#xCD95;&#xC81C;</h2>
+            <a href="/festival.html" class="home-section__more" data-i18n="festival_view_all">&#xC804;&#xCCB4; &#xBCF4;&#xAE30; &rarr;</a>
+        </div>
+        <div class="this-week-festivals-scroll">
+            <div class="this-week-festivals-list" id="this-week-festivals-list">
+                <!-- JS로 렌더링 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Season Theme Curation -->
+    <section class="home-section" id="home-theme-section" aria-labelledby="section-season-theme" style="display:none;">
+        <div class="home-section__header">
+            <h2 class="home-section__title" id="section-season-theme">이번 시즌 추천 테마</h2>
+            <a href="/theme.html" class="home-section__more">더 보기 &rarr;</a>
+        </div>
+        <div class="home-theme-preview" id="home-theme-preview">
+            <!-- JS로 렌더링 -->
         </div>
     </section>
 
@@ -296,6 +337,10 @@
         <a href="/weather.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
             <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
+        </a>
+        <a href="/ai.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2728;</span>
+            <span class="bottom-nav__label" data-i18n="nav_ai">AI 추천</span>
         </a>
         <a href="/favorites.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>

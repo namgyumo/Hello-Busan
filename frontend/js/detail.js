@@ -105,8 +105,19 @@
             Share.render('share-section', _showToast);
         }
 
+        // Add to Course button
+        const addToCourseBtn = document.getElementById('btn-add-to-course');
+        if (addToCourseBtn) {
+            addToCourseBtn.addEventListener('click', () => {
+                window.location.href = `/course.html?addSpot=${encodeURIComponent(spotId)}`;
+            });
+        }
+
         // Favorite Button
         _initFavoriteBtn(spotId);
+
+        // Crowd Trend (혼잡도 트렌드)
+        _loadCrowdTrend(spotId);
 
         // Air Quality (야외 관광지인 경우)
         var outdoorCategories = ['nature', 'activity', 'nightview'];
@@ -579,5 +590,184 @@
             if (e.key === 'ArrowLeft') goTo(currentIdx - 1);
             if (e.key === 'ArrowRight') goTo(currentIdx + 1);
         });
+    }
+
+    /** 혼잡도 트렌드 로드 및 렌더링 */
+    async function _loadCrowdTrend(id) {
+        var section = document.getElementById('crowd-trend-section');
+        if (!section) return;
+
+        try {
+            // 시간대별 트렌드 + 요일별 패턴 병렬 로드
+            var [trendRes, weeklyRes] = await Promise.all([
+                fetch('/api/v1/crowd/' + encodeURIComponent(id) + '/trend'),
+                fetch('/api/v1/crowd/' + encodeURIComponent(id) + '/weekly'),
+            ]);
+
+            var trendJson = await trendRes.json();
+            var weeklyJson = await weeklyRes.json();
+
+            if (!trendJson.success || !trendJson.data) return;
+
+            section.style.display = '';
+            var trend = trendJson.data;
+
+            // 실시간 배지
+            _renderCrowdBadge(trend);
+
+            // 시간대별 막대 그래프
+            _renderHourlyChart(trend);
+
+            // 베스트 타임
+            _renderBestTimes(trend);
+
+            // 요일별 히트맵
+            if (weeklyJson.success && weeklyJson.data) {
+                _renderWeeklyHeatmap(weeklyJson.data);
+                _renderBestDay(weeklyJson.data);
+            }
+        } catch (e) {
+            console.warn('혼잡도 트렌드 로드 실패:', e);
+        }
+    }
+
+    function _renderCrowdBadge(trend) {
+        var el = document.getElementById('crowd-trend-badge');
+        if (!el) return;
+
+        var score = trend.current_score;
+        var level = trend.current_level;
+        var badgeClass = 'crowd-trend__badge--good';
+        var icon = '\uD83D\uDFE2'; // green circle
+        var text = '지금 방문하기 좋아요!';
+
+        if (score < 40) {
+            badgeClass = 'crowd-trend__badge--crowded';
+            icon = '\uD83D\uDD34'; // red circle
+            text = '지금은 혼잡해요';
+        } else if (score < 70) {
+            badgeClass = 'crowd-trend__badge--normal';
+            icon = '\uD83D\uDFE1'; // yellow circle
+            text = '보통 수준이에요';
+        }
+
+        el.className = 'crowd-trend__badge ' + badgeClass;
+        el.innerHTML = '<span class="crowd-trend__badge-icon">' + icon + '</span>' +
+            '<span class="crowd-trend__badge-text">' + _escapeHtml(text) + '</span>' +
+            '<span class="crowd-trend__badge-level">' + _escapeHtml(level) + '</span>';
+    }
+
+    function _renderHourlyChart(trend) {
+        var container = document.getElementById('crowd-trend-chart');
+        if (!container) return;
+
+        var hours = trend.hours;
+        var currentHour = trend.current_hour;
+
+        // 최대값 찾기 (0 방지)
+        var maxScore = 100;
+
+        var barsHtml = '';
+        for (var i = 0; i < hours.length; i++) {
+            var h = hours[i];
+            var heightPct = Math.max(4, (100 - h.crowd_score) / maxScore * 100);
+            var isCurrent = h.hour === currentHour;
+            var barClass = 'crowd-bar';
+            if (isCurrent) barClass += ' crowd-bar--current';
+
+            // 색상 클래스
+            if (h.crowd_score >= 70) {
+                barClass += ' crowd-bar--good';
+            } else if (h.crowd_score >= 40) {
+                barClass += ' crowd-bar--normal';
+            } else {
+                barClass += ' crowd-bar--crowded';
+            }
+
+            var label = (h.hour % 3 === 0) ? h.hour + '' : '';
+            var showLabel = (h.hour % 3 === 0);
+
+            barsHtml += '<div class="crowd-bar-wrap" title="' + h.hour + '시: ' + _escapeHtml(h.level) + ' (' + h.crowd_score + '점)">' +
+                '<div class="' + barClass + '" style="height:' + heightPct + '%"></div>' +
+                (showLabel ? '<span class="crowd-bar__label">' + h.hour + '</span>' : '<span class="crowd-bar__label crowd-bar__label--empty"></span>') +
+                '</div>';
+        }
+
+        container.innerHTML = '<div class="crowd-chart-bars">' + barsHtml + '</div>';
+    }
+
+    function _renderBestTimes(trend) {
+        var el = document.getElementById('crowd-trend-best');
+        if (!el || !trend.best_times || trend.best_times.length === 0) return;
+
+        // 연속 시간대 그룹핑
+        var times = trend.best_times.map(function(t) { return t.hour; }).sort(function(a, b) { return a - b; });
+        var ranges = [];
+        var start = times[0];
+        var end = times[0];
+
+        for (var i = 1; i < times.length; i++) {
+            if (times[i] === end + 1) {
+                end = times[i];
+            } else {
+                ranges.push(_formatHourRange(start, end));
+                start = times[i];
+                end = times[i];
+            }
+        }
+        ranges.push(_formatHourRange(start, end));
+
+        el.innerHTML = '<span class="crowd-trend__best-icon">\u2728</span> ' +
+            '\uAC00\uC7A5 \uD55C\uC0B0\uD55C \uC2DC\uAC04: ' +
+            '<strong>' + _escapeHtml(ranges.join(', ')) + '</strong>';
+    }
+
+    function _formatHourRange(start, end) {
+        var s = start < 12 ? '\uC624\uC804 ' + (start === 0 ? 12 : start) + '\uC2DC' :
+            (start === 12 ? '\uC624\uD6C4 12\uC2DC' : '\uC624\uD6C4 ' + (start - 12) + '\uC2DC');
+        if (start === end) return s;
+        var e = (end + 1) < 12 ? '\uC624\uC804 ' + (end + 1) + '\uC2DC' :
+            ((end + 1) === 12 ? '\uC624\uD6C4 12\uC2DC' : '\uC624\uD6C4 ' + ((end + 1) - 12) + '\uC2DC');
+        return s + '~' + e;
+    }
+
+    function _renderWeeklyHeatmap(weekly) {
+        var container = document.getElementById('crowd-trend-weekly');
+        if (!container) return;
+
+        var days = weekly.days;
+        var today = weekly.today;
+
+        var html = '';
+        for (var i = 0; i < days.length; i++) {
+            var d = days[i];
+            var cellClass = 'weekly-cell';
+            if (i === today) cellClass += ' weekly-cell--today';
+
+            // 혼잡도에 따른 색상
+            if (d.avg_score >= 70) {
+                cellClass += ' weekly-cell--good';
+            } else if (d.avg_score >= 40) {
+                cellClass += ' weekly-cell--normal';
+            } else {
+                cellClass += ' weekly-cell--crowded';
+            }
+
+            html += '<div class="' + cellClass + '" title="' + _escapeHtml(d.day_name) + ': ' + d.avg_score + '\uC810">' +
+                '<span class="weekly-cell__day">' + _escapeHtml(d.day_name) + '</span>' +
+                '<span class="weekly-cell__score">' + d.avg_score + '</span>' +
+                '</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    function _renderBestDay(weekly) {
+        var el = document.getElementById('crowd-trend-best-day');
+        if (!el || !weekly.best_day) return;
+
+        el.innerHTML = '<span class="crowd-trend__best-icon">\uD83D\uDCC5</span> ' +
+            '\uAC00\uC7A5 \uD55C\uC0B0\uD55C \uC694\uC77C: ' +
+            '<strong>' + _escapeHtml(weekly.best_day.day_name) + '\uC694\uC77C</strong>';
     }
 })();

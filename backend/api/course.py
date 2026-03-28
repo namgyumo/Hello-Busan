@@ -1,14 +1,16 @@
 """
-코스 추천 API 라우터 — 코스 생성/동선 플래너
+코스 추천 API 라우터 — 코스 생성/동선 플래너 + 코스 빌더
 """
 from fastapi import APIRouter, Query, HTTPException
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, List
 from backend.models.common import SuccessResponse, Meta
 from backend.services.comfort import ComfortService
 from backend.services.location import LocationService
 from backend.db.supabase import get_supabase
 from backend.cache.manager import CacheManager
 import logging
+import math
 import random
 
 router = APIRouter(prefix="/api/v1/course", tags=["course"])
@@ -204,6 +206,78 @@ def _weighted_select(candidates: list, max_spots: int) -> list:
         remaining_weights.pop(chosen_idx)
 
     return selected
+
+
+class SpotLocation(BaseModel):
+    id: str
+    name: str = ""
+    lat: float = Field(ge=33.0, le=38.0)
+    lng: float = Field(ge=124.0, le=132.0)
+
+
+class OptimizeRequest(BaseModel):
+    spots: List[SpotLocation] = Field(min_length=2, max_length=30)
+
+
+@router.post("/optimize")
+async def optimize_route(req: OptimizeRequest):
+    """동선 최적화 — Nearest Neighbor TSP로 최단 경로 순서 반환"""
+    spots = [s.model_dump() for s in req.spots]
+
+    if len(spots) < 2:
+        return SuccessResponse(
+            data={"ordered_spots": spots, "total_distance_km": 0},
+            meta=Meta(total=len(spots)),
+        )
+
+    # 첫 번째 spot을 출발지로 사용
+    start_lat = spots[0]["lat"]
+    start_lng = spots[0]["lng"]
+    remaining = spots[1:]
+
+    ordered = [spots[0]]
+    current_lat, current_lng = start_lat, start_lng
+
+    unvisited = list(remaining)
+    while unvisited:
+        nearest = min(
+            unvisited,
+            key=lambda s: _haversine(current_lat, current_lng, s["lat"], s["lng"]),
+        )
+        ordered.append(nearest)
+        current_lat = nearest["lat"]
+        current_lng = nearest["lng"]
+        unvisited.remove(nearest)
+
+    # 총 거리 계산
+    total_dist = 0.0
+    for i in range(1, len(ordered)):
+        total_dist += _haversine(
+            ordered[i - 1]["lat"], ordered[i - 1]["lng"],
+            ordered[i]["lat"], ordered[i]["lng"],
+        )
+
+    return SuccessResponse(
+        data={
+            "ordered_spots": ordered,
+            "total_distance_km": round(total_dist, 2),
+        },
+        meta=Meta(total=len(ordered)),
+    )
+
+
+def _haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """두 좌표 사이 거리 (km) — Haversine 공식"""
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(dlng / 2) ** 2
+    )
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 def _nearest_neighbor_tsp(spots: list, start_lat: float, start_lng: float) -> list:

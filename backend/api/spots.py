@@ -86,6 +86,9 @@ async def get_spots(
                 query = query.eq("category_id", categories[0])
             else:
                 query = query.in_("category_id", categories)
+        else:
+            # 카테고리 미지정 시 heritage(문화재) 제외 — 별도 선택 시만 표시
+            query = query.neq("category_id", "heritage")
 
         # 검색어가 있으면 전체 조회 후 Python 필터링, 없으면 기존 로직
         keyword = ""

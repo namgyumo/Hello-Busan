@@ -70,6 +70,7 @@
     loadTimeline();
     loadWeeklyForecast();
     loadAirQuality();
+    loadWeatherSmartRecommend();
     loadWeatherRecommendations();
 
     // 언어 변경 시 전체 재로드
@@ -80,6 +81,7 @@
         loadTimeline();
         loadWeeklyForecast();
         loadAirQuality();
+        loadWeatherSmartRecommend();
         loadWeatherRecommendations();
     });
 
@@ -609,7 +611,92 @@
     }
 
     // ═══════════════════════════════════════
-    // 5. 날씨 기반 관광지 추천
+    // 5a. 날씨 스마트 추천 (API 기반)
+    // ═══════════════════════════════════════
+
+    var SMART_REC_ICONS = {
+        rain: '\u{1F327}\u{FE0F}',
+        clear_hot: '\u{2600}\u{FE0F}',
+        clear_cool: '\u{1F31E}',
+        cloudy: '\u{2601}\u{FE0F}',
+        cold: '\u{2744}\u{FE0F}',
+    };
+
+    async function loadWeatherSmartRecommend() {
+        var section = document.getElementById('weather-smart-recommend-section');
+        if (!section) return;
+
+        try {
+            var res = await fetch(API_BASE + '/weather/smart-recommend?limit=5&lang=' + I18n.getLang());
+            var json = await res.json();
+            if (!json.success || !json.data || !json.data.recommendations || json.data.recommendations.length === 0) return;
+
+            var d = json.data;
+            var condition = d.weather_condition || 'clear_cool';
+
+            // 섹션에 condition 클래스 적용
+            section.className = 'smart-recommend weather-smart-recommend smart-recommend--' + condition;
+
+            // 아이콘
+            var iconEl = document.getElementById('wp-smart-rec-icon');
+            if (iconEl) iconEl.textContent = SMART_REC_ICONS[condition] || '\u{1F31E}';
+
+            // 메시지
+            var msgEl = document.getElementById('wp-smart-rec-message');
+            if (msgEl) msgEl.textContent = d.message || '';
+
+            // 온도
+            var tempEl = document.getElementById('wp-smart-rec-temp');
+            if (tempEl) tempEl.textContent = Math.round(d.temperature) + '\u00B0C \u00B7 ' + (d.sky_text || '');
+
+            // 카드 렌더링
+            var listEl = document.getElementById('wp-smart-rec-list');
+            if (!listEl) return;
+
+            listEl.innerHTML = '';
+            d.recommendations.forEach(function(spot) {
+                var card = document.createElement('a');
+                card.className = 'smart-recommend-card';
+                card.href = '/detail.html?id=' + encodeURIComponent(spot.id);
+
+                var safeName = _escapeHtml(spot.name);
+                var catLabel = _categoryLabel(spot.category);
+                var reason = _escapeHtml(spot.reason || '');
+                var thumbUrl = spot.thumbnail_url || '';
+
+                var imgHtml = thumbUrl
+                    ? '<img src="' + _escapeHtml(thumbUrl) + '" alt="' + safeName + '" class="smart-recommend-card__img" loading="lazy">'
+                    : '<div class="smart-recommend-card__img-placeholder">' + _categoryEmoji(spot.category) + '</div>';
+
+                card.innerHTML =
+                    '<div class="smart-recommend-card__img-wrap">' +
+                        imgHtml +
+                        '<span class="smart-recommend-card__condition smart-recommend-card__condition--' + condition + '">' +
+                            (SMART_REC_ICONS[condition] || '') + ' ' + _escapeHtml(d.sky_text || '') +
+                        '</span>' +
+                    '</div>' +
+                    '<div class="smart-recommend-card__body">' +
+                        '<span class="smart-recommend-card__cat">' + _escapeHtml(catLabel) + '</span>' +
+                        '<h3 class="smart-recommend-card__name">' + safeName + '</h3>' +
+                        (reason ? '<p class="smart-recommend-card__reason">' + reason + '</p>' : '') +
+                    '</div>';
+
+                card.addEventListener('click', function() {
+                    if (typeof Analytics !== 'undefined') Analytics.trackSpotClick(spot.id, spot.name);
+                });
+
+                listEl.appendChild(card);
+            });
+
+            // 표시
+            section.style.display = '';
+        } catch (e) {
+            console.warn('스마트 추천 로드 실패:', e);
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // 5b. 날씨 기반 관광지 추천 (카테고리 기반)
     // ═══════════════════════════════════════
 
     async function loadWeatherRecommendations() {

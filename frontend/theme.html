@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>계절 테마 큐레이션 — Hello, Busan!</title>
+    <meta name="description" content="부산의 계절별 추천 테마와 큐레이션 관광지를 만나보세요">
+
+    <!-- OG Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="계절 테마 큐레이션 — Hello, Busan!">
+    <meta property="og:description" content="부산의 계절별 추천 테마와 큐레이션 관광지를 만나보세요">
+    <meta property="og:url" content="https://hellobusan.kr/theme.html">
+    <meta property="og:image" content="https://hellobusan.kr/images/og-home.png">
+    <meta property="og:site_name" content="Hello, Busan!">
+    <meta property="og:locale" content="ko_KR">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="계절 테마 큐레이션 — Hello, Busan!">
+    <meta name="twitter:description" content="부산의 계절별 추천 테마와 큐레이션 관광지를 만나보세요">
+
+    <link rel="canonical" href="https://hellobusan.kr/theme.html">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
+    <link rel="stylesheet" href="/css/style.css?v=4">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <meta name="theme-color" content="#0066CC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <script>
+    (function(){try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+    </script>
+</head>
+<body class="page-theme">
+    <!-- Offline Banner -->
+    <div class="offline-banner" id="offline-banner" role="alert">
+        <span class="offline-banner__icon" aria-hidden="true">&#x1F4F5;</span>
+        <span data-i18n="offline_banner">오프라인 모드 - 저장된 데이터를 표시합니다</span>
+    </div>
+
+    <a href="#main-content" class="skip-link">본문으로 건너뛰기</a>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <a href="/" class="header__logo" aria-label="Hello, Busan! 홈으로">Hello, Busan!</a>
+        <div class="header__actions">
+            <button id="theme-toggle" class="theme-toggle" aria-label="다크모드 전환">
+                <span class="theme-toggle__icon" aria-hidden="true">&#x2600;</span>
+            </button>
+            <select id="lang-select" class="lang-select" aria-label="Language">
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Season Hero Banner -->
+    <section class="theme-hero" id="theme-hero" aria-label="현재 계절 테마">
+        <div class="theme-hero__content">
+            <span class="theme-hero__season-badge" id="theme-season-badge"></span>
+            <h1 class="theme-hero__title" id="theme-hero-title">계절 테마 큐레이션</h1>
+            <p class="theme-hero__subtitle" id="theme-hero-subtitle">부산의 계절에 맞는 최고의 여행 테마를 만나보세요</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main id="main-content">
+        <!-- Current Season Themes -->
+        <section class="home-section" aria-labelledby="section-season-themes">
+            <h2 class="home-section__title" id="section-season-themes">이번 시즌 추천</h2>
+            <div class="theme-season-list" id="theme-season-list">
+                <div class="skeleton skeleton-popular"></div>
+                <div class="skeleton skeleton-popular"></div>
+            </div>
+        </section>
+
+        <!-- All-year Themes -->
+        <section class="home-section" aria-labelledby="section-all-themes">
+            <h2 class="home-section__title" id="section-all-themes">상시 테마</h2>
+            <div class="theme-grid" id="theme-all-list">
+                <div class="skeleton skeleton-popular"></div>
+                <div class="skeleton skeleton-popular"></div>
+            </div>
+        </section>
+
+        <!-- Theme Detail (spots list) — shown when a theme is clicked -->
+        <section class="home-section theme-detail-section" id="theme-detail-section" style="display:none;" aria-labelledby="theme-detail-title">
+            <div class="theme-detail-header" id="theme-detail-header">
+                <button class="theme-detail-back" id="theme-detail-back" aria-label="뒤로">&larr;</button>
+                <div class="theme-detail-header__info">
+                    <span class="theme-detail-header__icon" id="theme-detail-icon"></span>
+                    <h2 class="home-section__title" id="theme-detail-title"></h2>
+                </div>
+            </div>
+            <p class="theme-detail-desc" id="theme-detail-desc"></p>
+            <div class="theme-detail-tags" id="theme-detail-tags"></div>
+            <div class="theme-detail-spots" id="theme-detail-spots">
+                <div class="skeleton skeleton-popular"></div>
+                <div class="skeleton skeleton-popular"></div>
+            </div>
+            <button class="theme-detail-more" id="theme-detail-more" style="display:none;">더 보기</button>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" role="navigation" aria-label="메인 메뉴">
+        <a href="/" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F3E0;</span>
+            <span class="bottom-nav__label" data-i18n="nav_home">홈</span>
+        </a>
+        <a href="/map.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
+            <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/weather.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
+            <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
+        </a>
+        <a href="/ai.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2728;</span>
+            <span class="bottom-nav__label" data-i18n="nav_ai">AI 추천</span>
+        </a>
+        <a href="/favorites.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
+            <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
+        </a>
+    </nav>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="/js/analytics.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/pwa.js"></script>
+    <script src="/js/theme-page.js"></script>
+</body>
+</html>

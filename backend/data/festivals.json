@@ -1,0 +1,322 @@
+[
+  {
+    "id": "fest-001",
+    "name": "부산국제영화제 (BIFF)",
+    "description": "아시아 최대 규모의 국제영화제로, 매년 10월 부산 해운대 영화의전당에서 개최됩니다. 전 세계 영화인과 팬이 모여 다양한 영화 상영, 토크, 레드카펫 이벤트가 열립니다.",
+    "start_date": "2026-10-07",
+    "end_date": "2026-10-16",
+    "location": "영화의전당",
+    "address": "부산광역시 해운대구 수영강변대로 120",
+    "lat": 35.1631,
+    "lng": 129.1306,
+    "category": "축제",
+    "images": [
+      "https://www.biff.kr/kor/images/main/biff_main_visual.jpg"
+    ],
+    "tags": ["영화", "국제행사", "해운대", "레드카펫", "문화"]
+  },
+  {
+    "id": "fest-002",
+    "name": "부산불꽃축제",
+    "description": "광안리 해변에서 펼쳐지는 화려한 불꽃 쇼로, 매년 가을 수십만 명의 관광객이 찾는 부산의 대표 축제입니다. 레이저 쇼와 음악이 어우러진 멀티미디어 불꽃 쇼가 펼쳐집니다.",
+    "start_date": "2026-10-31",
+    "end_date": "2026-10-31",
+    "location": "광안리해수욕장",
+    "address": "부산광역시 수영구 광안해변로 219",
+    "lat": 35.1532,
+    "lng": 129.1187,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222180830750_thumbL"
+    ],
+    "tags": ["불꽃놀이", "광안리", "가을축제", "야경"]
+  },
+  {
+    "id": "fest-003",
+    "name": "해운대모래축제",
+    "description": "해운대 해수욕장에서 열리는 모래 조각 전시 및 체험 축제입니다. 세계적인 모래 조각가들의 작품 전시와 다양한 해변 체험 프로그램이 진행됩니다.",
+    "start_date": "2026-05-22",
+    "end_date": "2026-06-07",
+    "location": "해운대해수욕장",
+    "address": "부산광역시 해운대구 해운대해변로 264",
+    "lat": 35.1587,
+    "lng": 129.1604,
+    "category": "체험",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181030100_thumbL"
+    ],
+    "tags": ["해운대", "모래조각", "해변", "가족", "체험"]
+  },
+  {
+    "id": "fest-004",
+    "name": "부산바다축제",
+    "description": "부산의 여름을 대표하는 해양 축제로, 해운대·광안리·송정·다대포·송도 등 부산의 주요 해수욕장에서 동시에 열립니다. 해양 스포츠, 음악 공연, 불꽃놀이 등 다채로운 프로그램이 진행됩니다.",
+    "start_date": "2026-08-01",
+    "end_date": "2026-08-09",
+    "location": "해운대해수욕장 외 5개 해변",
+    "address": "부산광역시 해운대구 해운대해변로 264",
+    "lat": 35.1587,
+    "lng": 129.1604,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181130647_thumbL"
+    ],
+    "tags": ["해양", "여름", "해변", "공연", "불꽃놀이"]
+  },
+  {
+    "id": "fest-005",
+    "name": "자갈치축제",
+    "description": "부산의 대표 수산시장인 자갈치시장에서 열리는 수산물 축제입니다. 싱싱한 해산물 시식, 횟감 경매, 문화 공연 등 풍성한 프로그램을 즐길 수 있습니다.",
+    "start_date": "2026-10-15",
+    "end_date": "2026-10-18",
+    "location": "자갈치시장",
+    "address": "부산광역시 중구 자갈치해안로 52",
+    "lat": 35.0968,
+    "lng": 129.0306,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181250100_thumbL"
+    ],
+    "tags": ["수산물", "맛집", "자갈치", "시장", "먹거리"]
+  },
+  {
+    "id": "fest-006",
+    "name": "부산크리스마스마켓",
+    "description": "유럽식 크리스마스 마켓을 부산에서 즐길 수 있는 겨울 축제입니다. 수공예품, 먹거리, 크리스마스 장식 등 다양한 부스와 공연이 펼쳐집니다.",
+    "start_date": "2026-12-01",
+    "end_date": "2026-12-25",
+    "location": "부산시민공원",
+    "address": "부산광역시 부산진구 시민공원로 73",
+    "lat": 35.1681,
+    "lng": 129.0597,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20231127145908219_thumbL"
+    ],
+    "tags": ["크리스마스", "겨울", "마켓", "수공예", "가족"]
+  },
+  {
+    "id": "fest-007",
+    "name": "광안리어방축제",
+    "description": "광안리 해변에서 열리는 전통 어촌 문화 체험 축제입니다. 전통 어업 체험, 해산물 먹거리, 수상 레포츠 등 다양한 프로그램이 진행됩니다.",
+    "start_date": "2026-04-24",
+    "end_date": "2026-04-26",
+    "location": "광안리해수욕장",
+    "address": "부산광역시 수영구 광안해변로 219",
+    "lat": 35.1532,
+    "lng": 129.1187,
+    "category": "체험",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181430432_thumbL"
+    ],
+    "tags": ["광안리", "어촌", "전통", "체험", "해산물"]
+  },
+  {
+    "id": "fest-008",
+    "name": "부산원아시아페스티벌 (BOF)",
+    "description": "한류 문화를 중심으로 한 아시아 최대 규모의 문화 축제입니다. K-POP 콘서트, 팬미팅, 한류 박람회 등 다채로운 프로그램이 진행됩니다.",
+    "start_date": "2026-10-19",
+    "end_date": "2026-10-28",
+    "location": "부산아시아드주경기장 외",
+    "address": "부산광역시 연제구 월드컵대로 344",
+    "lat": 35.1906,
+    "lng": 129.0588,
+    "category": "공연",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181530100_thumbL"
+    ],
+    "tags": ["K-POP", "한류", "콘서트", "아시아", "공연"]
+  },
+  {
+    "id": "fest-009",
+    "name": "감천문화마을축제",
+    "description": "부산의 마추픽추로 불리는 감천문화마을에서 열리는 마을 축제입니다. 골목 예술 전시, 벽화 투어, 문화 체험 등 마을 전체가 축제의 장이 됩니다.",
+    "start_date": "2026-04-10",
+    "end_date": "2026-04-12",
+    "location": "감천문화마을",
+    "address": "부산광역시 사하구 감내2로 203",
+    "lat": 35.0975,
+    "lng": 129.0108,
+    "category": "전시",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181630100_thumbL"
+    ],
+    "tags": ["감천문화마을", "벽화", "예술", "마을투어", "사진"]
+  },
+  {
+    "id": "fest-010",
+    "name": "부산국제록페스티벌",
+    "description": "삼락생태공원에서 열리는 야외 록 음악 축제입니다. 국내외 록 밴드의 라이브 공연과 캠핑이 어우러진 페스티벌로, 음악 팬들의 뜨거운 호응을 받고 있습니다.",
+    "start_date": "2026-07-31",
+    "end_date": "2026-08-02",
+    "location": "삼락생태공원",
+    "address": "부산광역시 사상구 삼락동 29-46",
+    "lat": 35.1523,
+    "lng": 128.9782,
+    "category": "공연",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181700100_thumbL"
+    ],
+    "tags": ["록", "음악", "야외공연", "캠핑", "밴드"]
+  },
+  {
+    "id": "fest-011",
+    "name": "부산비엔날레",
+    "description": "부산시립미술관과 다양한 전시 공간에서 열리는 국제 현대미술 비엔날레입니다. 전 세계 현대미술 작가들의 작품을 만나볼 수 있습니다.",
+    "start_date": "2026-09-05",
+    "end_date": "2026-11-20",
+    "location": "부산시립미술관 외",
+    "address": "부산광역시 해운대구 APEC로 58",
+    "lat": 35.1650,
+    "lng": 129.1350,
+    "category": "전시",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181800100_thumbL"
+    ],
+    "tags": ["현대미술", "비엔날레", "국제전시", "미술관", "아트"]
+  },
+  {
+    "id": "fest-012",
+    "name": "부산차이나타운특구축제",
+    "description": "부산 차이나타운에서 열리는 중국 문화 체험 축제입니다. 중국 전통 음식, 사자춤, 등불 장식 등 이색적인 문화 체험을 즐길 수 있습니다.",
+    "start_date": "2026-09-19",
+    "end_date": "2026-09-21",
+    "location": "부산차이나타운",
+    "address": "부산광역시 동구 중앙대로 236번길",
+    "lat": 35.1148,
+    "lng": 129.0368,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222181900100_thumbL"
+    ],
+    "tags": ["차이나타운", "중국문화", "사자춤", "먹거리", "등불"]
+  },
+  {
+    "id": "fest-013",
+    "name": "태종대 동백꽃 축제",
+    "description": "태종대 유원지에서 봄에 열리는 동백꽃 축제입니다. 붉은 동백꽃이 만발한 산책로를 걸으며 다양한 문화 행사와 먹거리를 즐길 수 있습니다.",
+    "start_date": "2026-03-14",
+    "end_date": "2026-03-29",
+    "location": "태종대유원지",
+    "address": "부산광역시 영도구 전망로 24",
+    "lat": 35.0518,
+    "lng": 129.0836,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222182000100_thumbL"
+    ],
+    "tags": ["동백꽃", "태종대", "봄꽃", "산책", "영도"]
+  },
+  {
+    "id": "fest-014",
+    "name": "부산국제매직페스티벌",
+    "description": "국내외 유명 마술사들이 모여 펼치는 매직 쇼 축제입니다. 클로즈업 매직, 스테이지 매직, 거리 공연 등 다양한 마술 퍼포먼스를 감상할 수 있습니다.",
+    "start_date": "2026-06-12",
+    "end_date": "2026-06-14",
+    "location": "부산문화회관",
+    "address": "부산광역시 남구 유엔평화로 76번길 1",
+    "lat": 35.1365,
+    "lng": 129.0822,
+    "category": "공연",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222182100100_thumbL"
+    ],
+    "tags": ["매직", "마술", "공연", "체험", "가족"]
+  },
+  {
+    "id": "fest-015",
+    "name": "다대포꿈의낙조분수축제",
+    "description": "다대포 해변의 꿈의 낙조분수와 함께 열리는 축제입니다. 음악에 맞춰 춤추는 분수 쇼와 아름다운 석양을 동시에 즐길 수 있는 특별한 축제입니다.",
+    "start_date": "2026-04-01",
+    "end_date": "2026-10-31",
+    "location": "다대포해수욕장",
+    "address": "부산광역시 사하구 몰운대1길 14",
+    "lat": 35.0467,
+    "lng": 128.9642,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222182200100_thumbL"
+    ],
+    "tags": ["분수", "낙조", "다대포", "야경", "음악분수"]
+  },
+  {
+    "id": "fest-016",
+    "name": "부산연등축제",
+    "description": "삼광사에서 열리는 대규모 연등 축제로, 수만 개의 형형색색 연등이 밤하늘을 밝힙니다. 부처님 오신 날을 기념하는 전통 불교 문화 축제입니다.",
+    "start_date": "2026-05-15",
+    "end_date": "2026-05-24",
+    "location": "삼광사",
+    "address": "부산광역시 부산진구 초읍동 산26",
+    "lat": 35.1855,
+    "lng": 129.0302,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222182300100_thumbL"
+    ],
+    "tags": ["연등", "삼광사", "불교", "야경", "전통"]
+  },
+  {
+    "id": "fest-017",
+    "name": "해운대빛축제",
+    "description": "겨울 해운대를 빛으로 물들이는 조명 축제입니다. 해운대 해변과 주변 거리에 수백만 개의 LED 조명이 설치되어 환상적인 야경을 연출합니다.",
+    "start_date": "2026-11-28",
+    "end_date": "2027-01-31",
+    "location": "해운대해수욕장 일대",
+    "address": "부산광역시 해운대구 해운대해변로 264",
+    "lat": 35.1587,
+    "lng": 129.1604,
+    "category": "전시",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20231127150008219_thumbL"
+    ],
+    "tags": ["빛축제", "해운대", "겨울", "야경", "LED", "일루미네이션"]
+  },
+  {
+    "id": "fest-018",
+    "name": "부산국제코미디페스티벌 (BICF)",
+    "description": "국내외 코미디언과 개그맨들이 참여하는 웃음 축제입니다. 스탠드업 코미디, 개그 콘서트, 거리 퍼포먼스 등 다양한 웃음 콘텐츠를 즐길 수 있습니다.",
+    "start_date": "2026-08-22",
+    "end_date": "2026-08-30",
+    "location": "영화의전당 외",
+    "address": "부산광역시 해운대구 수영강변대로 120",
+    "lat": 35.1631,
+    "lng": 129.1306,
+    "category": "공연",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222182400100_thumbL"
+    ],
+    "tags": ["코미디", "웃음", "공연", "스탠드업", "페스티벌"]
+  },
+  {
+    "id": "fest-019",
+    "name": "부산항축제",
+    "description": "부산항 일대에서 열리는 해양 문화 축제입니다. 범선 퍼레이드, 해양 체험, 먹거리 장터 등 항구 도시 부산의 매력을 만끽할 수 있습니다.",
+    "start_date": "2026-05-29",
+    "end_date": "2026-05-31",
+    "location": "부산항 국제여객터미널 일대",
+    "address": "부산광역시 동구 충장대로 206",
+    "lat": 35.1143,
+    "lng": 129.0428,
+    "category": "축제",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222182500100_thumbL"
+    ],
+    "tags": ["부산항", "범선", "해양", "항구", "먹거리"]
+  },
+  {
+    "id": "fest-020",
+    "name": "북극곰 수영축제",
+    "description": "매년 1월 해운대 해수욕장에서 열리는 겨울 수영 이벤트입니다. 새해를 맞아 차가운 바다에 뛰어드는 이색 축제로, 국내외 참가자들이 참여합니다.",
+    "start_date": "2026-01-10",
+    "end_date": "2026-01-10",
+    "location": "해운대해수욕장",
+    "address": "부산광역시 해운대구 해운대해변로 264",
+    "lat": 35.1587,
+    "lng": 129.1604,
+    "category": "체험",
+    "images": [
+      "https://www.visitbusan.net/uploadImgs/files/cntnts/20191222182600100_thumbL"
+    ],
+    "tags": ["겨울수영", "해운대", "새해", "이색체험", "북극곰"]
+  }
+]

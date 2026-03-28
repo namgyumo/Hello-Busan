@@ -27,5 +27,8 @@ sse-starlette==1.8.2
 # Monitoring
 sentry-sdk[fastapi]==1.40.0
 
+# AI
+google-generativeai>=0.8.0
+
 # Utils
 python-dotenv==1.0.0

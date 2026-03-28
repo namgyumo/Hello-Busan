@@ -157,6 +157,14 @@ const Share = (() => {
 
         let buttonsHtml = '';
 
+        // 카드 공유 버튼 (모달 열기)
+        buttonsHtml += `
+            <button class="share-btn share-btn--card" data-action="card" aria-label="${I18n.t('share_card_btn') || '카드 공유'}">
+                <span class="share-btn__icon">&#x1F5BC;</span>
+                <span class="share-btn__label" data-i18n="share_card_btn">${I18n.t('share_card_btn') || '카드 공유'}</span>
+            </button>
+        `;
+
         if (hasNativeShare) {
             buttonsHtml += `
                 <button class="share-btn share-btn--native" data-action="native" aria-label="${I18n.t('share_native')}">
@@ -198,6 +206,9 @@ const Share = (() => {
             </div>
         `;
 
+        // FAB 공유 버튼 (플로팅)
+        _renderFab(showToast);
+
         // Event delegation
         container.addEventListener('click', async (e) => {
             const btn = e.target.closest('.share-btn');
@@ -205,6 +216,11 @@ const Share = (() => {
 
             const action = btn.dataset.action;
             switch (action) {
+                case 'card':
+                    if (typeof ShareModal !== 'undefined') {
+                        ShareModal.open(_spot, showToast);
+                    }
+                    break;
                 case 'native':
                     await shareNative();
                     break;
@@ -224,6 +240,25 @@ const Share = (() => {
                     }
                     break;
                 }
+            }
+        });
+    }
+
+    /**
+     * FAB(Floating Action Button) 공유 버튼 렌더링
+     */
+    function _renderFab(showToast) {
+        if (document.getElementById('share-fab')) return;
+        const fab = document.createElement('button');
+        fab.id = 'share-fab';
+        fab.className = 'share-fab';
+        fab.setAttribute('aria-label', I18n.t('share_title') || '공유하기');
+        fab.innerHTML = `<span class="share-fab__icon">&#x1F4E4;</span>`;
+        document.body.appendChild(fab);
+
+        fab.addEventListener('click', () => {
+            if (typeof ShareModal !== 'undefined' && _spot) {
+                ShareModal.open(_spot, showToast);
             }
         });
     }
@@ -269,5 +304,5 @@ const Share = (() => {
         }
     }
 
-    return { setSpot, render, updateOgMeta, shareNative, shareKakao, shareLine, shareTwitter, copyUrl };
+    return { setSpot, render, updateOgMeta, shareNative, shareKakao, shareLine, shareTwitter, copyUrl, _getShareDescription };
 })();

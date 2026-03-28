@@ -171,6 +171,23 @@
             </div>
         </section>
 
+        <!-- Weather Smart Recommend -->
+        <section class="smart-recommend weather-smart-recommend" id="weather-smart-recommend-section" aria-label="날씨 맞춤 추천" style="display:none;">
+            <div class="smart-recommend__header">
+                <span class="smart-recommend__weather-icon" id="wp-smart-rec-icon" aria-hidden="true"></span>
+                <div class="smart-recommend__header-text">
+                    <h2 class="smart-recommend__title" id="wp-smart-rec-title" data-i18n="smart_rec_weather_title">이 날씨에 추천하는 곳</h2>
+                    <p class="smart-recommend__message" id="wp-smart-rec-message"></p>
+                    <p class="smart-recommend__temp" id="wp-smart-rec-temp"></p>
+                </div>
+            </div>
+            <div class="smart-recommend__scroll">
+                <div class="smart-recommend__list" id="wp-smart-rec-list">
+                    <!-- JS로 렌더링 -->
+                </div>
+            </div>
+        </section>
+
         <!-- Weather-based Spot Recommendations -->
         <section class="home-section" id="weather-spots-section" aria-labelledby="section-weather-spots">
             <h2 class="home-section__title" id="section-weather-spots" data-i18n="weather_spots_title">관광지별 날씨 영향</h2>
@@ -199,6 +216,10 @@
         <a href="/weather.html" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
             <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
             <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
+        </a>
+        <a href="/ai.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2728;</span>
+            <span class="bottom-nav__label" data-i18n="nav_ai">AI 추천</span>
         </a>
         <a href="/favorites.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>

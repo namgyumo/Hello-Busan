@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>축제 캘린더 — Hello, Busan!</title>
+    <meta name="description" content="부산의 축제와 이벤트 일정을 캘린더로 확인하세요">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
+    <link rel="stylesheet" href="/css/style.css?v=4">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg">
+    <meta name="theme-color" content="#0066CC">
+    <script>
+    (function(){try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
+    </script>
+</head>
+<body class="page-festival">
+    <a href="#main-content" class="skip-link">본문으로 건너뛰기</a>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <a href="/" class="header__logo" aria-label="Hello, Busan! 홈으로">Hello, Busan!</a>
+        <div class="header__actions">
+            <button id="theme-toggle" class="theme-toggle" aria-label="다크모드 전환">
+                <span class="theme-toggle__icon" aria-hidden="true">&#x2600;</span>
+            </button>
+            <select id="lang-select" class="lang-select" aria-label="Language">
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+    </header>
+
+    <main id="main-content" class="festival-page">
+        <!-- Page Title -->
+        <div class="festival-page__header">
+            <h1 class="festival-page__title" data-i18n="festival_page_title">&#x1F389; &#xCD95;&#xC81C; &#xCE98;&#xB9B0;&#xB354;</h1>
+            <p class="festival-page__subtitle" data-i18n="festival_page_subtitle">&#xBD80;&#xC0B0;&#xC758; &#xCD95;&#xC81C;&#xC640; &#xC774;&#xBCA4;&#xD2B8; &#xC77C;&#xC815;</p>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="festival-page__controls">
+            <div class="festival-page__view-toggle">
+                <button class="festival-view-btn festival-view-btn--active" id="btn-calendar-view" aria-label="캘린더 뷰">
+                    <span aria-hidden="true">&#x1F4C5;</span>
+                    <span data-i18n="festival_calendar_view">캘린더</span>
+                </button>
+                <button class="festival-view-btn" id="btn-list-view" aria-label="리스트 뷰">
+                    <span aria-hidden="true">&#x1F4CB;</span>
+                    <span data-i18n="festival_list_view">리스트</span>
+                </button>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="festival-page__categories">
+                <button class="festival-cat-btn festival-cat-btn--active" data-category="all" data-i18n="festival_cat_all">전체</button>
+                <button class="festival-cat-btn festival-cat-btn--festival" data-category="축제" data-i18n="festival_cat_festival">축제</button>
+                <button class="festival-cat-btn festival-cat-btn--performance" data-category="공연" data-i18n="festival_cat_performance">공연</button>
+                <button class="festival-cat-btn festival-cat-btn--exhibition" data-category="전시" data-i18n="festival_cat_exhibition">전시</button>
+                <button class="festival-cat-btn festival-cat-btn--experience" data-category="체험" data-i18n="festival_cat_experience">체험</button>
+            </div>
+        </div>
+
+        <!-- Month Navigation -->
+        <div class="festival-page__month-nav">
+            <button class="festival-page__nav-btn" id="fp-prev-month" aria-label="이전 달">&#x276E;</button>
+            <h2 class="festival-page__month-label" id="fp-month-label"></h2>
+            <button class="festival-page__nav-btn" id="fp-next-month" aria-label="다음 달">&#x276F;</button>
+            <button class="festival-page__today-btn" id="fp-today-btn" data-i18n="festival_today">오늘</button>
+        </div>
+
+        <!-- Calendar View -->
+        <div class="festival-calendar" id="festival-calendar">
+            <div class="festival-calendar__weekdays" id="fp-weekdays">
+                <!-- JS로 렌더링 -->
+            </div>
+            <div class="festival-calendar__grid" id="fp-calendar-grid">
+                <!-- JS로 렌더링 -->
+            </div>
+        </div>
+
+        <!-- List View -->
+        <div class="festival-listview" id="festival-listview" style="display:none;">
+            <div class="festival-listview__items" id="fp-list-items">
+                <!-- JS로 렌더링 -->
+            </div>
+            <p class="festival-listview__empty" id="fp-list-empty" style="display:none;" data-i18n="festival_empty">이 달에는 축제가 없습니다</p>
+        </div>
+
+        <!-- Festival Detail Modal -->
+        <div class="fp-modal" id="fp-modal" role="dialog" aria-modal="true" aria-labelledby="fp-modal-title" style="display:none;">
+            <div class="fp-modal__backdrop" id="fp-modal-backdrop"></div>
+            <div class="fp-modal__content">
+                <button class="fp-modal__close" id="fp-modal-close" aria-label="Close">&times;</button>
+                <div id="fp-modal-body"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" role="navigation" aria-label="메인 메뉴">
+        <a href="/" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F3E0;</span>
+            <span class="bottom-nav__label" data-i18n="nav_home">홈</span>
+        </a>
+        <a href="/map.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x1F5FA;</span>
+            <span class="bottom-nav__label" data-i18n="nav_map">지도</span>
+        </a>
+        <a href="/weather.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
+            <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
+        </a>
+        <a href="/ai.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2728;</span>
+            <span class="bottom-nav__label" data-i18n="nav_ai">AI 추천</span>
+        </a>
+        <a href="/favorites.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
+            <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
+        </a>
+    </nav>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="/js/analytics.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/pwa.js"></script>
+    <script src="/js/festival.js"></script>
+</body>
+</html>

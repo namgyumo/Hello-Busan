@@ -19,11 +19,20 @@
     // 날씨 스마트 배너 로드
     loadWeatherBanner();
 
+    // 날씨 스마트 추천 로드
+    loadSmartRecommend();
+
     // 7일 예보 로드
     loadWeeklyForecast();
 
     // 대기질 정보 로드
     loadAirQuality();
+
+    // 이번 주 축제 로드
+    loadThisWeekFestivals();
+
+    // 계절 테마 추천 로드
+    loadSeasonThemes();
 
     // 히어로 배너 슬라이드 초기화
     initHeroSlider();
@@ -35,8 +44,11 @@
         loadCategories();
         loadPopularSpots();
         loadWeatherBanner();
+        loadSmartRecommend();
         loadWeeklyForecast();
         loadAirQuality();
+        loadThisWeekFestivals();
+        loadSeasonThemes();
         _applySliderAltTexts();
     });
 
@@ -74,6 +86,7 @@
                 limit: '6',
                 offset: '0',
                 lang: I18n.getLang(),
+                diverse: 'true',
             });
             const res = await fetch(`${API_BASE}/recommend?${params}`);
             const json = await res.json();
@@ -202,6 +215,89 @@
         }
     }
 
+    // ─── 날씨 스마트 추천 ───
+
+    const SMART_REC_ICONS = {
+        rain: '\u{1F327}\u{FE0F}',
+        clear_hot: '\u{2600}\u{FE0F}',
+        clear_cool: '\u{1F31E}',
+        cloudy: '\u{2601}\u{FE0F}',
+        cold: '\u{2744}\u{FE0F}',
+    };
+
+    async function loadSmartRecommend() {
+        const section = document.getElementById('smart-recommend-section');
+        if (!section) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/weather/smart-recommend?limit=5&lang=${I18n.getLang()}`);
+            const json = await res.json();
+            if (!json.success || !json.data || !json.data.recommendations || json.data.recommendations.length === 0) return;
+
+            const d = json.data;
+            const condition = d.weather_condition || 'clear_cool';
+
+            // 섹션에 condition 클래스 적용
+            section.className = 'smart-recommend smart-recommend--' + condition;
+
+            // 아이콘
+            const iconEl = document.getElementById('smart-rec-icon');
+            if (iconEl) iconEl.textContent = SMART_REC_ICONS[condition] || '\u{1F31E}';
+
+            // 메시지
+            const msgEl = document.getElementById('smart-rec-message');
+            if (msgEl) msgEl.textContent = d.message || '';
+
+            // 온도
+            const tempEl = document.getElementById('smart-rec-temp');
+            if (tempEl) tempEl.textContent = `${Math.round(d.temperature)}\u00B0C \u00B7 ${d.sky_text || ''}`;
+
+            // 카드 렌더링
+            const listEl = document.getElementById('smart-rec-list');
+            if (!listEl) return;
+
+            listEl.innerHTML = '';
+            d.recommendations.forEach(function(spot) {
+                const card = document.createElement('a');
+                card.className = 'smart-recommend-card';
+                card.href = '/detail.html?id=' + encodeURIComponent(spot.id);
+
+                const safeName = _escapeHtml(spot.name);
+                const catLabel = _categoryLabel(spot.category);
+                const reason = _escapeHtml(spot.reason || '');
+                const thumbUrl = spot.thumbnail_url || '';
+
+                const imgHtml = thumbUrl
+                    ? '<img src="' + _escapeHtml(thumbUrl) + '" alt="' + safeName + '" class="smart-recommend-card__img" loading="lazy">'
+                    : '<div class="smart-recommend-card__img-placeholder">' + _categoryEmoji(spot.category) + '</div>';
+
+                card.innerHTML =
+                    '<div class="smart-recommend-card__img-wrap">' +
+                        imgHtml +
+                        '<span class="smart-recommend-card__condition smart-recommend-card__condition--' + condition + '">' +
+                            (SMART_REC_ICONS[condition] || '') + ' ' + _escapeHtml(d.sky_text || '') +
+                        '</span>' +
+                    '</div>' +
+                    '<div class="smart-recommend-card__body">' +
+                        '<span class="smart-recommend-card__cat">' + _escapeHtml(catLabel) + '</span>' +
+                        '<h3 class="smart-recommend-card__name">' + safeName + '</h3>' +
+                        (reason ? '<p class="smart-recommend-card__reason">' + reason + '</p>' : '') +
+                    '</div>';
+
+                card.addEventListener('click', function() {
+                    if (typeof Analytics !== 'undefined') Analytics.trackSpotClick(spot.id, spot.name);
+                });
+
+                listEl.appendChild(card);
+            });
+
+            // 표시
+            section.style.display = '';
+        } catch (e) {
+            console.warn('스마트 추천 로드 실패:', e);
+        }
+    }
+
     // ─── 대기질 정보 ───
     const AQ_GRADE_CONFIG = {
         1: { key: 'aq_good',     css: 'good',     icon: '\u{1F7E2}' },
@@ -281,6 +377,43 @@
             });
         } catch (e) {
             console.warn('대기질 로드 실패:', e);
+        }
+    }
+
+    // ─── 계절 테마 추천 ───
+    async function loadSeasonThemes() {
+        var section = document.getElementById('home-theme-section');
+        var container = document.getElementById('home-theme-preview');
+        if (!section || !container) return;
+
+        try {
+            var res = await fetch(API_BASE + '/themes/current?lang=' + I18n.getLang());
+            var json = await res.json();
+            if (!json.success || !json.data || !json.data.themes || json.data.themes.length === 0) return;
+
+            var themes = json.data.themes;
+            container.innerHTML = '';
+
+            themes.forEach(function(t) {
+                var card = document.createElement('a');
+                card.className = 'home-theme-card';
+                card.href = '/theme.html?id=' + encodeURIComponent(t.id);
+                card.style.background = t.gradient;
+
+                card.innerHTML =
+                    '<div class="home-theme-card__overlay"></div>' +
+                    '<div class="home-theme-card__content">' +
+                        '<span class="home-theme-card__icon">' + t.icon + '</span>' +
+                        '<span class="home-theme-card__name">' + _escapeHtml(t.name) + '</span>' +
+                        '<span class="home-theme-card__desc">' + _escapeHtml(t.description) + '</span>' +
+                    '</div>';
+
+                container.appendChild(card);
+            });
+
+            section.style.display = '';
+        } catch (e) {
+            console.warn('계절 테마 로드 실패:', e);
         }
     }
 
@@ -574,6 +707,90 @@
                 c.classList.remove('forecast-card--active');
             });
         });
+    }
+
+    // ─── 이번 주 축제 ───
+
+    async function loadThisWeekFestivals() {
+        var section = document.getElementById('this-week-festivals-section');
+        var list = document.getElementById('this-week-festivals-list');
+        if (!section || !list) return;
+
+        try {
+            var res = await fetch(API_BASE + '/festivals/this-week');
+            var json = await res.json();
+            if (!json.success || !json.data || json.data.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            list.innerHTML = '';
+            json.data.forEach(function(fest) {
+                var card = document.createElement('a');
+                card.className = 'tw-festival-card';
+                card.href = '/festival.html?id=' + encodeURIComponent(fest.id);
+
+                var safeName = _escapeHtml(fest.name);
+                var safeLocation = _escapeHtml(fest.location || '');
+                var dateRange = _twFormatDate(fest.start_date, fest.end_date);
+
+                var thumb = (fest.images && fest.images.length > 0) ? fest.images[0] : '';
+                var imgHtml = thumb
+                    ? '<img src="' + _escapeHtml(thumb) + '" alt="' + safeName + '" class="tw-festival-card__img" loading="lazy">'
+                    : '<div class="tw-festival-card__img-placeholder">&#x1F389;</div>';
+
+                // D-day badge
+                var dDay = fest.d_day;
+                var badgeClass = 'tw-festival-card__dday';
+                var badgeText = '';
+                if (dDay === 0 || dDay === null) {
+                    badgeClass += ' tw-festival-card__dday--ongoing';
+                    badgeText = I18n.t('festival_ongoing') || '진행 중';
+                } else if (dDay != null && dDay > 0) {
+                    badgeClass += ' tw-festival-card__dday--upcoming';
+                    badgeText = 'D-' + dDay;
+                }
+
+                var catLabel = _twCategoryLabel(fest.category);
+
+                card.innerHTML =
+                    '<div class="tw-festival-card__image">' +
+                        imgHtml +
+                        (badgeText ? '<span class="' + badgeClass + '">' + badgeText + '</span>' : '') +
+                    '</div>' +
+                    '<div class="tw-festival-card__body">' +
+                        '<span class="tw-festival-card__cat">' + _escapeHtml(catLabel) + '</span>' +
+                        '<h3 class="tw-festival-card__name">' + safeName + '</h3>' +
+                        '<p class="tw-festival-card__date">&#x1F4C5; ' + _escapeHtml(dateRange) + '</p>' +
+                        (safeLocation ? '<p class="tw-festival-card__location">&#x1F4CD; ' + safeLocation + '</p>' : '') +
+                    '</div>';
+
+                list.appendChild(card);
+            });
+
+            section.style.display = '';
+        } catch (e) {
+            console.warn('이번 주 축제 로드 실패:', e);
+            section.style.display = 'none';
+        }
+    }
+
+    function _twFormatDate(start, end) {
+        if (!start && !end) return '';
+        var s = start ? start.substring(5).replace('-', '.') : '?';
+        var e = end ? end.substring(5).replace('-', '.') : '?';
+        if (s === e) return s;
+        return s + ' ~ ' + e;
+    }
+
+    function _twCategoryLabel(cat) {
+        var map = {
+            '축제': I18n.t('festival_cat_festival') || '축제',
+            '공연': I18n.t('festival_cat_performance') || '공연',
+            '전시': I18n.t('festival_cat_exhibition') || '전시',
+            '체험': I18n.t('festival_cat_experience') || '체험',
+        };
+        return map[cat] || cat || '';
     }
 
     // ─── 히어로 배너 이미지 슬라이더 ───

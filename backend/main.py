@@ -112,6 +112,11 @@ def create_app() -> FastAPI:
     from backend.api.course import router as course_router
     from backend.api.transport import router as transport_router
     from backend.api.air_quality import router as air_quality_router
+    from backend.api.ai_recommend import router as ai_recommend_router
+    from backend.api.crowd import router as crowd_router
+    from backend.api.share import router as share_router
+    from backend.api.festival import router as festival_router
+    from backend.api.theme import router as theme_router
 
     app.include_router(spots_router)
     app.include_router(recommend_router)
@@ -122,6 +127,11 @@ def create_app() -> FastAPI:
     app.include_router(course_router)
     app.include_router(transport_router)
     app.include_router(air_quality_router)
+    app.include_router(ai_recommend_router)
+    app.include_router(crowd_router)
+    app.include_router(share_router)
+    app.include_router(festival_router)
+    app.include_router(theme_router)
 
     # 프론트엔드 정적 파일 서빙
     frontend_dir = Path(__file__).parent.parent / "frontend"
@@ -191,6 +201,38 @@ def create_app() -> FastAPI:
         weather_path = frontend_dir / "weather.html"
         if weather_path.exists():
             return FileResponse(weather_path, headers=_no_cache)
+        return {"error": "page not found"}
+
+    @app.get("/ai.html")
+    async def ai_page():
+        """AI 추천 페이지"""
+        ai_path = frontend_dir / "ai.html"
+        if ai_path.exists():
+            return FileResponse(ai_path, headers=_no_cache)
+        return {"error": "page not found"}
+
+    @app.get("/course.html")
+    async def course_page():
+        """코스 빌더 페이지"""
+        course_path = frontend_dir / "course.html"
+        if course_path.exists():
+            return FileResponse(course_path, headers=_no_cache)
+        return {"error": "page not found"}
+
+    @app.get("/festival.html")
+    async def festival_page():
+        """축제 캘린더 페이지"""
+        festival_path = frontend_dir / "festival.html"
+        if festival_path.exists():
+            return FileResponse(festival_path, headers=_no_cache)
+        return {"error": "page not found"}
+
+    @app.get("/theme.html")
+    async def theme_page():
+        """계절 테마 큐레이션 페이지"""
+        theme_path = frontend_dir / "theme.html"
+        if theme_path.exists():
+            return FileResponse(theme_path, headers=_no_cache)
         return {"error": "page not found"}
 
     @app.get("/offline.html")

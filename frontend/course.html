@@ -3,36 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>저장한 관광지 — Hello, Busan!</title>
-    <meta name="description" content="저장한 부산 관광지 목록을 확인하세요">
-
-    <!-- OG Meta Tags -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="저장한 관광지 — Hello, Busan!">
-    <meta property="og:description" content="저장한 부산 관광지 목록을 확인하세요">
-    <meta property="og:url" content="https://hellobusan.kr/favorites.html">
-    <meta property="og:image" content="https://hellobusan.kr/images/og-home.png">
-    <meta property="og:site_name" content="Hello, Busan!">
-    <meta property="og:locale" content="ko_KR">
-    <meta property="og:locale:alternate" content="en_US">
-    <meta property="og:locale:alternate" content="ja_JP">
-    <meta property="og:locale:alternate" content="zh_CN">
-    <meta property="og:locale:alternate" content="ru_RU">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="저장한 관광지 — Hello, Busan!">
-    <meta name="twitter:description" content="저장한 부산 관광지 목록을 확인하세요">
-    <meta name="twitter:image" content="https://hellobusan.kr/images/og-home.png">
-
-    <!-- SEO: hreflang & canonical -->
-    <link rel="canonical" href="https://hellobusan.kr/favorites.html">
-    <link rel="alternate" hreflang="ko" href="https://hellobusan.kr/favorites.html?lang=ko">
-    <link rel="alternate" hreflang="en" href="https://hellobusan.kr/favorites.html?lang=en">
-    <link rel="alternate" hreflang="ja" href="https://hellobusan.kr/favorites.html?lang=ja">
-    <link rel="alternate" hreflang="zh" href="https://hellobusan.kr/favorites.html?lang=zh">
-    <link rel="alternate" hreflang="ru" href="https://hellobusan.kr/favorites.html?lang=ru">
-    <link rel="alternate" hreflang="x-default" href="https://hellobusan.kr/favorites.html">
+    <title>코스 빌더 — Hello, Busan!</title>
+    <meta name="description" content="나만의 부산 여행 코스를 만들어보세요 — 관광지 추가, 동선 최적화, 일차별 계획">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/style.css?v=4">
@@ -46,14 +18,14 @@
     (function(){try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
     </script>
 </head>
-<body class="page-favorites">
+<body class="page-course">
     <!-- Offline Banner -->
     <div class="offline-banner" id="offline-banner" role="alert">
         <span class="offline-banner__icon" aria-hidden="true">&#x1F4F5;</span>
         <span data-i18n="offline_banner">오프라인 모드 - 저장된 데이터를 표시합니다</span>
     </div>
 
-    <a href="#main-content" class="skip-link">본문으로 건너뛰기</a>
+    <a href="#course-main" class="skip-link">본문으로 건너뛰기</a>
 
     <!-- Header -->
     <header class="header" role="banner">
@@ -72,17 +44,82 @@
         </div>
     </header>
 
-    <main class="favorites-main" id="main-content">
-        <div class="favorites-header">
-            <h1 class="favorites-title" data-i18n="favorites_title">저장한 관광지</h1>
-            <p class="favorites-desc" data-i18n="favorites_desc">마음에 드는 관광지를 저장하고 관리하세요</p>
+    <main class="course-builder-page" id="course-main">
+        <!-- Course List View (shown when no course is being edited) -->
+        <div id="cb-list-view">
+            <div style="padding:1rem;display:flex;align-items:center;justify-content:space-between">
+                <h1 style="font-size:1.2rem;font-weight:800" data-i18n="cb_my_courses">내 코스</h1>
+                <button class="cb-btn cb-btn--primary" id="cb-new-course-btn">
+                    <span aria-hidden="true">+</span>
+                    <span data-i18n="cb_new_course">새 코스</span>
+                </button>
+            </div>
+            <div class="cb-my-courses" id="cb-course-list">
+                <!-- Dynamically rendered -->
+            </div>
         </div>
-        <div id="favorites-list" class="favorites-list">
-            <div class="skeleton skeleton-card"></div>
-            <div class="skeleton skeleton-card"></div>
-            <div class="skeleton skeleton-card"></div>
+
+        <!-- Course Editor View (shown when editing a course) -->
+        <div id="cb-editor-view" style="display:none">
+            <!-- Title bar -->
+            <div class="cb-header">
+                <button class="cb-header__back" id="cb-back-btn" aria-label="뒤로">&larr;</button>
+                <input type="text" class="cb-title-input" id="cb-course-title"
+                       placeholder="코스 제목을 입력하세요" data-i18n-placeholder="cb_title_placeholder" maxlength="50">
+            </div>
+
+            <!-- Day tabs -->
+            <div class="cb-day-tabs" id="cb-day-tabs">
+                <button class="cb-day-tab cb-day-tab--active" data-day="1">Day 1</button>
+                <button class="cb-day-tab cb-day-tab--add" id="cb-add-day-btn" aria-label="일차 추가">+</button>
+            </div>
+
+            <!-- Spot list for current day -->
+            <div class="cb-spot-list" id="cb-spot-list">
+                <!-- Dynamically rendered -->
+            </div>
+
+            <!-- Distance info -->
+            <div class="cb-distance" id="cb-distance-info" style="display:none">
+                <span aria-hidden="true">&#x1F4CF;</span>
+                <span data-i18n="cb_total_distance">총 예상 이동거리:</span>
+                <span class="cb-distance__value" id="cb-distance-value">0 km</span>
+            </div>
+
+            <!-- Actions -->
+            <div class="cb-actions">
+                <button class="cb-btn cb-btn--primary" id="cb-add-spot-btn">
+                    <span aria-hidden="true">+</span>
+                    <span data-i18n="cb_add_spot">관광지 추가</span>
+                </button>
+                <button class="cb-btn cb-btn--secondary" id="cb-optimize-btn" disabled>
+                    <span aria-hidden="true">&#x26A1;</span>
+                    <span data-i18n="cb_optimize">동선 최적화</span>
+                </button>
+                <button class="cb-btn cb-btn--danger" id="cb-delete-day-btn">
+                    <span aria-hidden="true">&#x1F5D1;</span>
+                    <span data-i18n="cb_delete_day">일차 삭제</span>
+                </button>
+            </div>
         </div>
     </main>
+
+    <!-- Add Spot Modal -->
+    <div class="cb-modal-overlay" id="cb-modal-overlay">
+        <div class="cb-modal" role="dialog" aria-modal="true" aria-label="관광지 검색">
+            <div class="cb-modal__header">
+                <input type="text" class="cb-modal__search" id="cb-search-input"
+                       placeholder="관광지 이름으로 검색" data-i18n-placeholder="cb_search_placeholder">
+                <button class="cb-modal__close" id="cb-modal-close" aria-label="닫기">&times;</button>
+            </div>
+            <div class="cb-modal__body" id="cb-search-results">
+                <div class="cb-modal__loading" data-i18n="cb_search_hint">관광지 이름을 검색하세요</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="cb-toast" id="cb-toast" role="status" aria-live="polite"></div>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav" role="navigation" aria-label="메인 메뉴">
@@ -102,21 +139,17 @@
             <span class="bottom-nav__icon" aria-hidden="true">&#x2728;</span>
             <span class="bottom-nav__label" data-i18n="nav_ai">AI 추천</span>
         </a>
-        <a href="/favorites.html" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
+        <a href="/favorites.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
             <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
         </a>
     </nav>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
     <script src="/js/analytics.js"></script>
     <script src="/js/i18n.js"></script>
     <script src="/js/theme.js"></script>
     <script src="/js/pwa.js"></script>
-    <script src="/js/favorites.js"></script>
-    <script src="/js/offline-store.js"></script>
-    <script src="/js/favorites-page.js"></script>
+    <script src="/js/course-builder.js"></script>
 
     <!-- SW Update Toast -->
     <div class="sw-update-toast" id="sw-update-toast" role="alert">
@@ -127,7 +160,6 @@
     <!-- Service Worker Registration & Offline Detection -->
     <script>
     (function() {
-        // Offline detection
         function updateOnlineStatus() {
             if (!navigator.onLine) {
                 document.body.classList.add('is-offline');
@@ -139,12 +171,6 @@
         window.addEventListener('offline', updateOnlineStatus);
         updateOnlineStatus();
 
-        // IndexedDB favorites sync
-        if (typeof OfflineStore !== 'undefined') {
-            OfflineStore.initFavoritesSync();
-        }
-
-        // Service Worker registration
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').then(function(reg) {
                 reg.addEventListener('updatefound', function() {

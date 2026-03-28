@@ -1,15 +1,17 @@
 """
-날씨 API — 현재 날씨 + 7일 예보 엔드포인트
+날씨 API — 현재 날씨 + 7일 예보 + 스마트 추천 엔드포인트
 GET /api/v1/weather/current
 GET /api/v1/weather/forecast
+GET /api/v1/weather/smart-recommend
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from backend.db.supabase import get_supabase
 from backend.models.common import SuccessResponse, ErrorResponse, ErrorDetail, Meta
+from backend.ml.fallback import CATEGORY_META
 
 logger = logging.getLogger(__name__)
 
@@ -359,3 +361,222 @@ def _calc_travel_score(
         + humidity_score * 0.15
     )
     return int(total)
+
+
+# ────────────────────────────────────────────
+# 날씨 기반 스마트 추천
+# ────────────────────────────────────────────
+
+# 날씨 조건별 추천 카테고리 + 추천 이유 메시지
+_WEATHER_RECOMMEND_RULES: Dict[str, Dict] = {
+    "rain": {
+        "preferred_categories": ["culture", "food", "shopping", "history"],
+        "prefer_indoor": True,
+        "message_ko": "비 오는 날엔 이런 곳 어때요?",
+        "message_en": "Perfect indoor spots for a rainy day",
+        "icon": "rain",
+        "reasons": {
+            "ko": "비 오는 날 실내에서 즐기기 좋은 곳",
+            "en": "Great indoor spot for rainy weather",
+        },
+    },
+    "clear_hot": {
+        "preferred_categories": ["nature", "activity", "shopping", "beach"],
+        "prefer_indoor": False,
+        "message_ko": "화창하고 더운 날, 시원하게 즐기세요!",
+        "message_en": "Cool spots for a hot sunny day!",
+        "icon": "clear_hot",
+        "reasons": {
+            "ko": "더운 날 시원하게 즐길 수 있는 곳",
+            "en": "Cool spot for hot weather",
+        },
+    },
+    "clear_cool": {
+        "preferred_categories": ["nature", "nightview", "activity", "landmark"],
+        "prefer_indoor": False,
+        "message_ko": "산책하기 딱 좋은 날씨예요!",
+        "message_en": "Perfect weather for a walk!",
+        "icon": "clear_cool",
+        "reasons": {
+            "ko": "선선한 날씨에 야외 활동하기 좋은 곳",
+            "en": "Great outdoor spot for cool weather",
+        },
+    },
+    "cloudy": {
+        "preferred_categories": ["culture", "food", "shopping"],
+        "prefer_indoor": True,
+        "message_ko": "흐린 날엔 여유롭게 둘러보세요",
+        "message_en": "Explore cozy spots on a cloudy day",
+        "icon": "cloudy",
+        "reasons": {
+            "ko": "흐린 날 여유롭게 즐기기 좋은 곳",
+            "en": "Cozy spot for a cloudy day",
+        },
+    },
+    "cold": {
+        "preferred_categories": ["culture", "food", "shopping", "history"],
+        "prefer_indoor": True,
+        "message_ko": "추운 날엔 따뜻한 실내 명소로!",
+        "message_en": "Warm indoor spots for a cold day!",
+        "icon": "cold",
+        "reasons": {
+            "ko": "추운 날 따뜻하게 즐길 수 있는 곳",
+            "en": "Warm indoor spot for cold weather",
+        },
+    },
+}
+
+
+def _determine_condition_extended(sky: str, rain_type: str, tmp: float) -> str:
+    """확장된 날씨 조건 판별 (cold 포함)"""
+    if rain_type not in ("없음", "0", "", None):
+        return "rain"
+    if sky == "4":
+        return "cloudy"
+    if tmp < 5:
+        return "cold"
+    if sky in ("1", "3") and tmp >= 28:
+        return "clear_hot"
+    return "clear_cool"
+
+
+@router.get("/smart-recommend")
+async def get_smart_recommend(
+    limit: int = Query(5, ge=1, le=10),
+    lang: str = Query("ko"),
+):
+    """현재 날씨 기반 스마트 관광지 추천"""
+    try:
+        sb = get_supabase()
+
+        # 1) 현재 날씨 조회
+        since = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+        weather_result = (
+            sb.table("weather_data")
+            .select("*")
+            .gte("timestamp", since)
+            .order("timestamp", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        if weather_result.data and len(weather_result.data) > 0:
+            row = weather_result.data[0]
+            sky_code = str(row.get("sky_code") or "1")
+            rain_type = row.get("rain_type") or "없음"
+            temperature = row.get("temperature") if row.get("temperature") is not None else 20
+            humidity = row.get("humidity") if row.get("humidity") is not None else 50
+        else:
+            sky_code = "1"
+            rain_type = "없음"
+            temperature = 20
+            humidity = 50
+
+        condition = _determine_condition_extended(sky_code, rain_type, temperature)
+        rules = _WEATHER_RECOMMEND_RULES.get(condition, _WEATHER_RECOMMEND_RULES["clear_cool"])
+
+        # 2) 관광지 조회
+        spots_result = (
+            sb.table("tourist_spots")
+            .select("id, name, category_id, address, lat, lng, images, rating, view_count")
+            .eq("is_active", True)
+            .execute()
+        )
+        all_spots = spots_result.data or []
+
+        # 3) 날씨 조건에 맞는 관광지 필터링 및 스코어링
+        preferred_cats = set(rules["preferred_categories"])
+        prefer_indoor = rules["prefer_indoor"]
+        reason_text = rules["reasons"].get(lang, rules["reasons"]["en"])
+
+        scored_spots = []
+        for spot in all_spots:
+            cat = spot.get("category_id", "")
+            meta = CATEGORY_META.get(cat, {})
+            is_indoor = meta.get("is_indoor", False)
+
+            score = 0.0
+
+            # 카테고리 매칭 부스트
+            if cat in preferred_cats:
+                score += 40
+
+            # 실내/외 선호도 매칭
+            if prefer_indoor and is_indoor:
+                score += 30
+            elif not prefer_indoor and not is_indoor:
+                score += 20
+
+            # 더운 날: 실내 쇼핑/문화도 추가 부스트
+            if condition == "clear_hot" and is_indoor and cat in ("shopping", "culture"):
+                score += 15
+
+            # 추운 날: 실내 강화
+            if condition == "cold" and is_indoor:
+                score += 20
+
+            # 인기도 가점
+            view_count = spot.get("view_count") or 0
+            score += min(view_count / 1000, 10)
+
+            # 평점 가점
+            rating = spot.get("rating") or 3.0
+            score += rating * 2
+
+            # 최소 관련성 threshold
+            if score < 20:
+                continue
+
+            scored_spots.append((spot, score))
+
+        scored_spots.sort(key=lambda x: x[1], reverse=True)
+        top_spots = scored_spots[:limit]
+
+        # 4) 응답 조립
+        recommendations = []
+        for spot, score in top_spots:
+            cat = spot.get("category_id", "")
+            raw_images = spot.get("images", []) if isinstance(spot.get("images"), list) else []
+
+            recommendations.append({
+                "id": str(spot.get("id", "")),
+                "name": spot.get("name", ""),
+                "category": cat,
+                "address": spot.get("address", ""),
+                "reason": reason_text,
+                "images": raw_images,
+                "thumbnail_url": raw_images[0] if raw_images else "",
+                "lat": spot.get("lat"),
+                "lng": spot.get("lng"),
+            })
+
+        msg_key = "message_ko" if lang == "ko" else "message_en"
+
+        return SuccessResponse(
+            data={
+                "weather_condition": condition,
+                "temperature": temperature,
+                "humidity": humidity,
+                "sky_text": _sky_text(sky_code),
+                "message": rules.get(msg_key, rules["message_en"]),
+                "icon": rules["icon"],
+                "recommendations": recommendations,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"스마트 추천 조회 실패: {e}")
+        return SuccessResponse(
+            data={
+                "weather_condition": "clear_cool",
+                "temperature": 20,
+                "humidity": 50,
+                "sky_text": "맑음",
+                "message": _WEATHER_RECOMMEND_RULES["clear_cool"].get(
+                    "message_ko" if lang == "ko" else "message_en", ""
+                ),
+                "icon": "clear_cool",
+                "recommendations": [],
+            },
+            meta=Meta(fallback_used=True),
+        )

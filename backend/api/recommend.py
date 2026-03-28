@@ -103,10 +103,11 @@ async def get_recommendations(
     offset: int = Query(0, ge=0),
     lang: str = Query("ko"),
     session_id: Optional[str] = Query(None, description="세션 ID (A/B 실험 + 개인화 추천)"),
+    diverse: bool = Query(False, description="카테고리 다양성 보장 (홈 쾌적 섹션용)"),
 ):
     """[API-004] XGBoost 기반 관광지 추천"""
     experiment_bucket = _get_experiment_bucket(session_id)
-    cache_key = f"recommend:{lat}:{lng}:{categories}:{search}:{limit}:{offset}:{lang}:{experiment_bucket}:{session_id or ''}"
+    cache_key = f"recommend:{lat}:{lng}:{categories}:{search}:{limit}:{offset}:{lang}:{experiment_bucket}:{session_id or ''}:{diverse}"
     cached = await cache.get(cache_key)
     if cached:
         return cached
@@ -138,6 +139,9 @@ async def get_recommendations(
                 query = query.eq("category_id", cat_list[0])
             else:
                 query = query.in_("category_id", cat_list)
+        else:
+            # 카테고리 미지정 시 heritage(문화재) 제외
+            query = query.neq("category_id", "heritage")
 
         # Supabase 기본 1000행 제한 우회: 페이지네이션으로 전체 조회
         all_spots = []
@@ -223,6 +227,10 @@ async def get_recommendations(
         if personalized and user_profile:
             scored_spots = _apply_personalization(scored_spots, user_profile)
 
+        # 카테고리 다양성 보장 (diverse=true)
+        if diverse and not categories:
+            scored_spots = _apply_diversity(scored_spots, limit + offset)
+
         total_count = len(scored_spots)
         top_spots = scored_spots[offset:offset + limit]
 
@@ -272,6 +280,49 @@ async def get_recommendations(
     except Exception as e:
         logger.error(f"추천 생성 실패: {e}")
         raise HTTPException(status_code=500, detail="추천 생성 중 오류 발생")
+
+
+def _apply_diversity(
+    scored_spots: list[tuple[dict, float]],
+    target_count: int,
+) -> list[tuple[dict, float]]:
+    """카테고리별 라운드로빈으로 골고루 선택하여 다양성 보장.
+    각 카테고리에서 스코어 높은 순으로 1개씩 돌아가며 뽑음.
+    heritage 카테고리는 제외.
+    """
+    from collections import defaultdict
+
+    # 카테고리별 분류 (heritage 제외)
+    by_cat: dict[str, list] = defaultdict(list)
+    for item in scored_spots:
+        cat = item[0].get("category_id", "etc")
+        if cat == "heritage":
+            continue
+        by_cat[cat].append(item)
+
+    # 각 카테고리 내에서 스코어 순 정렬 (이미 정렬되어 있지만 안전하게)
+    for cat in by_cat:
+        by_cat[cat].sort(key=lambda x: x[1], reverse=True)
+
+    # 라운드로빈: 각 카테고리에서 1개씩 돌아가며 선택
+    result = []
+    cat_indices = {cat: 0 for cat in by_cat}
+    cat_order = sorted(by_cat.keys(), key=lambda c: by_cat[c][0][1] if by_cat[c] else 0, reverse=True)
+
+    while len(result) < target_count:
+        added = False
+        for cat in cat_order:
+            if len(result) >= target_count:
+                break
+            idx = cat_indices[cat]
+            if idx < len(by_cat[cat]):
+                result.append(by_cat[cat][idx])
+                cat_indices[cat] = idx + 1
+                added = True
+        if not added:
+            break
+
+    return result
 
 
 def _build_reasons(

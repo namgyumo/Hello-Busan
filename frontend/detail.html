@@ -122,6 +122,22 @@
             </div>
         </div>
 
+        <!-- Crowd Trend (혼잡도 트렌드) -->
+        <div class="crowd-trend" id="crowd-trend-section" style="display:none">
+            <!-- 실시간 배지 -->
+            <div class="crowd-trend__badge" id="crowd-trend-badge"></div>
+
+            <!-- 시간대별 막대 그래프 -->
+            <h3 class="crowd-trend__title">시간대별 혼잡도</h3>
+            <div class="crowd-trend__chart" id="crowd-trend-chart"></div>
+            <div class="crowd-trend__best" id="crowd-trend-best"></div>
+
+            <!-- 요일별 히트맵 -->
+            <h3 class="crowd-trend__title">요일별 패턴</h3>
+            <div class="crowd-trend__weekly" id="crowd-trend-weekly"></div>
+            <div class="crowd-trend__best-day" id="crowd-trend-best-day"></div>
+        </div>
+
         <!-- Air Quality (shown for outdoor spots: nature, activity, nightview) -->
         <div class="air-quality-detail" id="detail-air-quality" style="display:none">
             <div class="air-quality__header">
@@ -156,6 +172,10 @@
             <button class="btn-directions" id="btn-directions" aria-label="길찾기">
                 <span class="btn-directions__icon" aria-hidden="true">&#x1F68C;</span>
                 <span data-i18n="directions_button">길찾기</span>
+            </button>
+            <button class="btn-add-to-course" id="btn-add-to-course" aria-label="코스에 추가">
+                <span aria-hidden="true">&#x1F4CB;</span>
+                <span data-i18n="btn_add_to_course">코스에 추가</span>
             </button>
         </div>
 
@@ -228,6 +248,10 @@
             <span class="bottom-nav__icon" aria-hidden="true">&#x26C5;</span>
             <span class="bottom-nav__label" data-i18n="nav_weather">날씨</span>
         </a>
+        <a href="/ai.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon" aria-hidden="true">&#x2728;</span>
+            <span class="bottom-nav__label" data-i18n="nav_ai">AI 추천</span>
+        </a>
         <a href="/favorites.html" class="bottom-nav__item">
             <span class="bottom-nav__icon" aria-hidden="true">&#x2764;</span>
             <span class="bottom-nav__label" data-i18n="nav_favorites">저장</span>
@@ -242,7 +266,9 @@
     <script src="/js/theme.js"></script>
     <script src="/js/favorites.js"></script>
     <script src="/js/offline-store.js"></script>
+    <script src="/js/share-card.js"></script>
     <script src="/js/share.js"></script>
+    <script src="/js/share-modal.js"></script>
     <script src="/js/pwa.js"></script>
     <script src="/js/directions.js"></script>
     <script src="/js/detail.js"></script>

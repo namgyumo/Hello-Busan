@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # 부산 관광 API
     BUSAN_TOUR_API_KEY: str = ""
 
+    # Gemini AI
+    GEMINI_API_KEY: str = ""
+
     # Sentry 모니터링
     SENTRY_DSN: str = ""
 
