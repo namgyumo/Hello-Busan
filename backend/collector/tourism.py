@@ -110,9 +110,9 @@ class TourismCollector(BaseCollector):
         for item in items:
             images = []
             if item.get("firstimage"):
-                images.append(item["firstimage"])
+                images.append(item["firstimage"].replace("http://", "https://"))
             if item.get("firstimage2") and item["firstimage2"] != item.get("firstimage"):
-                images.append(item["firstimage2"])
+                images.append(item["firstimage2"].replace("http://", "https://"))
 
             spot = {
                 "external_id": item.get("contentid"),

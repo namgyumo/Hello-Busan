@@ -187,7 +187,7 @@ class BusanApiCollector(BaseCollector):
                     for key in ("MAIN_IMG_NORMAL", "MAIN_IMG_THUMB"):
                         img = item.get(key, "")
                         if img and img not in images:
-                            images.append(img)
+                            images.append(img.replace("http://", "https://"))
 
                     spots.append({
                         "external_id": f"busan_theme_{seq}",
