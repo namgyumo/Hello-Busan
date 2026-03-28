@@ -296,5 +296,12 @@
   "cb_search_error": "搜索错误",
   "cb_added": "已添加",
   "cb_add": "添加",
-  "btn_add_to_course": "添加到路线"
+  "btn_add_to_course": "添加到路线",
+  "tab_favorites": "收藏",
+  "tab_courses": "我的路线",
+  "courses_empty_text": "还没有创建路线",
+  "courses_create_new": "创建路线",
+  "course_select_title": "添加到路线",
+  "course_select_new": "创建新路线",
+  "course_spot_added_to": "已添加到'{name}'"
 }

@@ -1161,6 +1161,63 @@ body{animation:pageIn 350ms ease-out}
 
 .favorites-list{display:flex;flex-direction:column;gap:.6rem}
 
+/* ===== Favorites Page Tabs ===== */
+.fav-tabs{display:flex;gap:0;background:var(--color-bg);border-radius:var(--radius-full);padding:3px;margin-bottom:1rem}
+.fav-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:.35rem;padding:.55rem .5rem;border:none;background:transparent;border-radius:var(--radius-full);font-size:.82rem;font-weight:600;color:var(--color-text-secondary);cursor:pointer;transition:all var(--transition)}
+.fav-tab--active{background:var(--color-surface);color:var(--color-primary);box-shadow:var(--shadow-sm)}
+.fav-tab:hover:not(.fav-tab--active){color:var(--color-text)}
+.fav-tab__icon{font-size:.9rem}
+
+/* ===== Courses List in Favorites Tab ===== */
+.courses-list{display:flex;flex-direction:column;gap:.6rem}
+.courses-list__header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.courses-new-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.45rem .9rem;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-full);font-size:.8rem;font-weight:600;cursor:pointer;transition:background var(--transition)}
+.courses-new-btn:hover{background:var(--color-primary-dark)}
+.fav-course-card{display:flex;align-items:center;gap:.75rem;padding:.75rem;background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);border:1px solid var(--color-border);cursor:pointer;transition:box-shadow var(--transition),border-color var(--transition);text-decoration:none;color:var(--color-text)}
+.fav-course-card:hover{border-color:var(--color-primary);box-shadow:var(--shadow-md)}
+.fav-course-card__icon{font-size:1.5rem;flex-shrink:0}
+.fav-course-card__body{flex:1;min-width:0}
+.fav-course-card__name{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav-course-card__meta{font-size:.75rem;color:var(--color-text-secondary);margin-top:2px;display:flex;flex-wrap:wrap;gap:.5rem}
+.fav-course-card__arrow{color:var(--color-text-secondary);font-size:1rem;flex-shrink:0}
+.courses-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;text-align:center;color:var(--color-secondary)}
+.courses-empty__icon{font-size:2.5rem;margin-bottom:.75rem;opacity:.4}
+.courses-empty__text{font-size:.9rem;margin-bottom:1rem}
+
+/* ===== Course Selector Modal (Detail page) ===== */
+.course-select-modal{position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;visibility:hidden;pointer-events:none}
+.course-select-modal--open{visibility:visible;pointer-events:auto}
+.course-select-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity 300ms ease}
+.course-select-modal--open .course-select-modal__backdrop{opacity:1}
+.course-select-modal__sheet{position:relative;z-index:1;width:100%;max-width:480px;max-height:70vh;background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;box-shadow:var(--shadow-lg);transform:translateY(100%);transition:transform 350ms cubic-bezier(0.32,0.72,0,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.course-select-modal--open .course-select-modal__sheet{transform:translateY(0)}
+.course-select-modal__handle{width:40px;height:4px;background:var(--color-border);border-radius:2px;margin:12px auto 0}
+.course-select-modal__header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 8px}
+.course-select-modal__title{font-size:1rem;font-weight:700;color:var(--color-text);margin:0}
+.course-select-modal__close{background:none;border:none;font-size:1.6rem;color:var(--color-text-secondary);cursor:pointer;padding:4px 8px;line-height:1;border-radius:var(--radius-sm)}
+.course-select-modal__close:hover{background:var(--color-bg)}
+.course-select-modal__body{padding:8px 16px 20px;display:flex;flex-direction:column;gap:6px}
+.course-select-modal__item{display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);cursor:pointer;transition:all var(--transition)}
+.course-select-modal__item:hover{border-color:var(--color-primary);background:var(--color-primary-light)}
+.course-select-modal__item-icon{font-size:1.2rem;flex-shrink:0}
+.course-select-modal__item-body{flex:1;min-width:0}
+.course-select-modal__item-name{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.course-select-modal__item-meta{font-size:.72rem;color:var(--color-text-secondary);margin-top:1px}
+.course-select-modal__item--new{border-style:dashed;border-color:var(--color-primary);color:var(--color-primary)}
+.course-select-modal__item--new:hover{background:var(--color-primary);color:#fff}
+.course-select-modal__item--new .course-select-modal__item-icon{font-size:1.4rem}
+.course-select-modal__item--new .course-select-modal__item-name{color:inherit}
+
+[data-theme="dark"] .fav-tab--active{background:var(--color-surface);box-shadow:var(--shadow-sm)}
+[data-theme="dark"] .course-select-modal__backdrop{background:rgba(0,0,0,.7)}
+[data-theme="dark"] .course-select-modal__item:hover{background:rgba(77,163,255,.12)}
+[data-theme="dark"] .course-select-modal__item--new:hover{background:var(--color-primary);color:#fff}
+
+@media(min-width:768px){
+    .course-select-modal{align-items:center}
+    .course-select-modal__sheet{border-radius:var(--radius-xl);max-height:60vh;margin-bottom:0}
+}
+
 .favorites-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;text-align:center;color:var(--color-secondary)}
 .favorites-empty__icon{font-size:2.5rem;margin-bottom:.75rem;opacity:.4}
 .favorites-empty__text{font-size:.9rem}
@@ -1782,6 +1839,8 @@ body.is-offline .header {
     .favorites-header{margin-bottom:.75rem}
     .favorites-title{font-size:1.15rem}
     .favorites-empty{padding:2rem .75rem}
+    .fav-tabs{margin-bottom:.75rem}
+    .courses-empty{padding:2rem .75rem}
 
     /* --- 11. Prevent horizontal overflow on all pages --- */
     body{overflow-x:hidden}

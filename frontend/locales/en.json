@@ -296,5 +296,12 @@
   "cb_search_error": "Search error",
   "cb_added": "Added",
   "cb_add": "Add",
-  "btn_add_to_course": "Add to Course"
+  "btn_add_to_course": "Add to Course",
+  "tab_favorites": "Favorites",
+  "tab_courses": "My Courses",
+  "courses_empty_text": "No courses yet",
+  "courses_create_new": "Create Course",
+  "course_select_title": "Add to Course",
+  "course_select_new": "Create New Course",
+  "course_spot_added_to": "Added to '{name}'"
 }

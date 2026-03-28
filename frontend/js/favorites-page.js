@@ -1,20 +1,75 @@
 /**
- * favorites-page.js — 저장한 관광지 페이지 로직
+ * favorites-page.js — 저장한 관광지 + 내 코스 페이지 로직
  */
 (async () => {
     const API_BASE = '/api/v1';
+    const COURSE_STORAGE_KEY = 'hello_busan_courses';
 
     await I18n.init();
-    loadFavorites();
+
+    // ===== Tab Management =====
+    const tabFavorites = document.getElementById('fav-tab-favorites');
+    const tabCourses = document.getElementById('fav-tab-courses');
+    const contentFavorites = document.getElementById('fav-content-favorites');
+    const contentCourses = document.getElementById('fav-content-courses');
+
+    let activeTab = 'favorites';
+
+    // Check URL param for initial tab
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'courses') {
+        activeTab = 'courses';
+    }
+
+    function switchTab(tab) {
+        activeTab = tab;
+
+        // Update tab buttons
+        tabFavorites.classList.toggle('fav-tab--active', tab === 'favorites');
+        tabCourses.classList.toggle('fav-tab--active', tab === 'courses');
+
+        // Update content visibility
+        contentFavorites.style.display = tab === 'favorites' ? '' : 'none';
+        contentCourses.style.display = tab === 'courses' ? '' : 'none';
+
+        // Update URL without reload
+        const url = new URL(window.location);
+        if (tab === 'courses') {
+            url.searchParams.set('tab', 'courses');
+        } else {
+            url.searchParams.delete('tab');
+        }
+        history.replaceState(null, '', url.toString());
+
+        // Load content
+        if (tab === 'favorites') {
+            loadFavorites();
+        } else {
+            renderCourseList();
+        }
+    }
+
+    tabFavorites.addEventListener('click', () => switchTab('favorites'));
+    tabCourses.addEventListener('click', () => switchTab('courses'));
+
+    // Init
+    switchTab(activeTab);
 
     window.addEventListener('langchange', () => {
-        loadFavorites();
+        if (activeTab === 'favorites') {
+            loadFavorites();
+        } else {
+            renderCourseList();
+        }
     });
 
     window.addEventListener('favorites-changed', () => {
-        loadFavorites();
+        if (activeTab === 'favorites') {
+            loadFavorites();
+        }
     });
 
+    // ===== Favorites Tab =====
     async function loadFavorites() {
         const container = document.getElementById('favorites-list');
         if (!container) return;
@@ -30,7 +85,6 @@
         }
 
         try {
-            // Fetch all favorited spots in parallel
             const results = await Promise.allSettled(
                 ids.map(id =>
                     fetch(`${API_BASE}/spots/${encodeURIComponent(id)}?lang=${I18n.getLang()}`)
@@ -86,13 +140,6 @@
         });
     }
 
-    function _escapeHtml(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
     function createSpotCard(spot) {
         const card = document.createElement('a');
         card.className = 'spot-card';
@@ -136,6 +183,103 @@
     function handleToggle(spotId) {
         const added = Favorites.toggle(spotId);
         showToast(I18n.t(added ? 'favorite_added' : 'favorite_removed'));
+    }
+
+    // ===== Courses Tab =====
+    function _loadCourses() {
+        try {
+            const raw = localStorage.getItem(COURSE_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function _haversine(lat1, lng1, lat2, lng2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function _calcTotalDistance(course) {
+        let total = 0;
+        (course.days || []).forEach(day => {
+            const spots = (day.spots || []).filter(s => s.lat != null && s.lng != null);
+            for (let i = 1; i < spots.length; i++) {
+                total += _haversine(spots[i - 1].lat, spots[i - 1].lng, spots[i].lat, spots[i].lng);
+            }
+        });
+        return total;
+    }
+
+    function renderCourseList() {
+        const container = document.getElementById('courses-list');
+        if (!container) return;
+
+        const courses = _loadCourses();
+
+        if (courses.length === 0) {
+            container.innerHTML = `
+                <div class="courses-empty">
+                    <div class="courses-empty__icon">&#x1F5FA;</div>
+                    <div class="courses-empty__text">${_escapeHtml(I18n.t('courses_empty_text'))}</div>
+                    <a href="/course.html" class="courses-new-btn">
+                        <span aria-hidden="true">+</span>
+                        <span>${_escapeHtml(I18n.t('courses_create_new'))}</span>
+                    </a>
+                </div>
+            `;
+            return;
+        }
+
+        // Sort by most recently updated
+        const sorted = [...courses].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+        let html = `
+            <div class="courses-list__header">
+                <a href="/course.html" class="courses-new-btn">
+                    <span aria-hidden="true">+</span>
+                    <span>${_escapeHtml(I18n.t('courses_create_new'))}</span>
+                </a>
+            </div>
+        `;
+
+        sorted.forEach(course => {
+            const totalSpots = (course.days || []).reduce((sum, d) => sum + (d.spots || []).length, 0);
+            const dayCount = (course.days || []).length;
+            const totalDist = _calcTotalDistance(course);
+            const title = _escapeHtml(course.title || I18n.t('cb_untitled'));
+            const distText = totalDist > 0 ? ` / ${totalDist.toFixed(1)}km` : '';
+
+            html += `
+                <a href="/course.html?edit=${encodeURIComponent(course.id)}" class="fav-course-card">
+                    <div class="fav-course-card__icon">&#x1F4CB;</div>
+                    <div class="fav-course-card__body">
+                        <div class="fav-course-card__name">${title}</div>
+                        <div class="fav-course-card__meta">
+                            <span>${dayCount}${_escapeHtml(I18n.t('cb_day_unit'))}</span>
+                            <span>${totalSpots}${_escapeHtml(I18n.t('cb_spot_unit'))}</span>
+                            ${distText ? `<span>${distText}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="fav-course-card__arrow">&#x276F;</div>
+                </a>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ===== Helpers =====
+    function _escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     function showToast(msg) {

@@ -77,10 +77,31 @@
             <h1 class="favorites-title" data-i18n="favorites_title">저장한 관광지</h1>
             <p class="favorites-desc" data-i18n="favorites_desc">마음에 드는 관광지를 저장하고 관리하세요</p>
         </div>
-        <div id="favorites-list" class="favorites-list">
-            <div class="skeleton skeleton-card"></div>
-            <div class="skeleton skeleton-card"></div>
-            <div class="skeleton skeleton-card"></div>
+
+        <!-- Tab Navigation -->
+        <div class="fav-tabs" id="fav-tabs">
+            <button class="fav-tab fav-tab--active" data-tab="favorites" id="fav-tab-favorites">
+                <span class="fav-tab__icon" aria-hidden="true">&#x2764;</span>
+                <span data-i18n="tab_favorites">즐겨찾기</span>
+            </button>
+            <button class="fav-tab" data-tab="courses" id="fav-tab-courses">
+                <span class="fav-tab__icon" aria-hidden="true">&#x1F4CB;</span>
+                <span data-i18n="tab_courses">내 코스</span>
+            </button>
+        </div>
+
+        <!-- Favorites Tab Content -->
+        <div id="fav-content-favorites" class="fav-content">
+            <div id="favorites-list" class="favorites-list">
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+                <div class="skeleton skeleton-card"></div>
+            </div>
+        </div>
+
+        <!-- Courses Tab Content -->
+        <div id="fav-content-courses" class="fav-content" style="display:none">
+            <div id="courses-list" class="courses-list"></div>
         </div>
     </main>
 

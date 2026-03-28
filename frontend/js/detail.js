@@ -105,11 +105,11 @@
             Share.render('share-section', _showToast);
         }
 
-        // Add to Course button
+        // Add to Course button — open course selector modal
         const addToCourseBtn = document.getElementById('btn-add-to-course');
         if (addToCourseBtn) {
             addToCourseBtn.addEventListener('click', () => {
-                window.location.href = `/course.html?addSpot=${encodeURIComponent(spotId)}`;
+                _openCourseSelectModal(spot);
             });
         }
 
@@ -590,6 +590,113 @@
             if (e.key === 'ArrowLeft') goTo(currentIdx - 1);
             if (e.key === 'ArrowRight') goTo(currentIdx + 1);
         });
+    }
+
+    // ===== Course Selector Modal =====
+    const COURSE_STORAGE_KEY = 'hello_busan_courses';
+
+    function _openCourseSelectModal(spot) {
+        const modal = document.getElementById('course-select-modal');
+        const body = document.getElementById('course-select-body');
+        const backdrop = document.getElementById('course-select-backdrop');
+        const closeBtn = document.getElementById('course-select-close');
+        if (!modal || !body) return;
+
+        let courses = [];
+        try {
+            const raw = localStorage.getItem(COURSE_STORAGE_KEY);
+            courses = raw ? JSON.parse(raw) : [];
+        } catch (e) { courses = []; }
+
+        body.innerHTML = '';
+
+        // "New Course" option
+        const newItem = document.createElement('div');
+        newItem.className = 'course-select-modal__item course-select-modal__item--new';
+        newItem.innerHTML = `
+            <div class="course-select-modal__item-icon">+</div>
+            <div class="course-select-modal__item-body">
+                <div class="course-select-modal__item-name">${_escapeHtml(I18n.t('course_select_new'))}</div>
+            </div>
+        `;
+        newItem.addEventListener('click', () => {
+            _closeCourseSelectModal();
+            window.location.href = `/course.html?addSpot=${encodeURIComponent(spot.id)}`;
+        });
+        body.appendChild(newItem);
+
+        // Existing courses
+        const sorted = [...courses].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        sorted.forEach(course => {
+            const totalSpots = (course.days || []).reduce((sum, d) => sum + (d.spots || []).length, 0);
+            const dayCount = (course.days || []).length;
+            const title = _escapeHtml(course.title || I18n.t('cb_untitled'));
+
+            const item = document.createElement('div');
+            item.className = 'course-select-modal__item';
+            item.innerHTML = `
+                <div class="course-select-modal__item-icon">&#x1F4CB;</div>
+                <div class="course-select-modal__item-body">
+                    <div class="course-select-modal__item-name">${title}</div>
+                    <div class="course-select-modal__item-meta">${dayCount}${_escapeHtml(I18n.t('cb_day_unit'))} / ${totalSpots}${_escapeHtml(I18n.t('cb_spot_unit'))}</div>
+                </div>
+            `;
+            item.addEventListener('click', () => {
+                _addSpotToExistingCourse(course.id, spot);
+                _closeCourseSelectModal();
+            });
+            body.appendChild(item);
+        });
+
+        modal.classList.add('course-select-modal--open');
+
+        // Close handlers
+        backdrop.onclick = _closeCourseSelectModal;
+        closeBtn.onclick = _closeCourseSelectModal;
+    }
+
+    function _closeCourseSelectModal() {
+        const modal = document.getElementById('course-select-modal');
+        if (modal) modal.classList.remove('course-select-modal--open');
+    }
+
+    function _addSpotToExistingCourse(courseId, spot) {
+        let courses = [];
+        try {
+            const raw = localStorage.getItem(COURSE_STORAGE_KEY);
+            courses = raw ? JSON.parse(raw) : [];
+        } catch (e) { courses = []; }
+
+        const course = courses.find(c => c.id === courseId);
+        if (!course) return;
+
+        // Add to Day 1 by default
+        let dayData = course.days && course.days.length > 0 ? course.days[0] : null;
+        if (!dayData) {
+            dayData = { day: 1, spots: [] };
+            course.days = [dayData];
+        }
+
+        const spotId = String(spot.id);
+
+        // Prevent duplicate
+        if (dayData.spots.some(s => s.id === spotId)) {
+            _showToast(I18n.t('cb_already_added'));
+            return;
+        }
+
+        dayData.spots.push({
+            id: spotId,
+            name: spot.name,
+            category: spot.category || '',
+            lat: spot.lat,
+            lng: spot.lng,
+            thumbnail_url: spot.images && spot.images.length > 0 ? spot.images[0] : '',
+        });
+
+        course.updatedAt = Date.now();
+        localStorage.setItem(COURSE_STORAGE_KEY, JSON.stringify(courses));
+        _showToast(I18n.t('course_spot_added_to').replace('{name}', course.title || I18n.t('cb_untitled')));
     }
 
     /** 혼잡도 트렌드 로드 및 렌더링 */

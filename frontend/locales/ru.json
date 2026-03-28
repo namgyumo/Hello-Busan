@@ -296,5 +296,12 @@
   "cb_search_error": "Ошибка поиска",
   "cb_added": "Добавлено",
   "cb_add": "Добавить",
-  "btn_add_to_course": "Добавить в маршрут"
+  "btn_add_to_course": "Добавить в маршрут",
+  "tab_favorites": "Избранное",
+  "tab_courses": "Мои маршруты",
+  "courses_empty_text": "Маршрутов пока нет",
+  "courses_create_new": "Создать маршрут",
+  "course_select_title": "Добавить в маршрут",
+  "course_select_new": "Создать новый маршрут",
+  "course_spot_added_to": "Добавлено в '{name}'"
 }

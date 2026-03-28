@@ -15,9 +15,10 @@
     let currentDay = 1;
     let searchDebounce = null;
 
-    // Check if opened from detail page with spot to add
+    // Check URL params
     const urlParams = new URLSearchParams(window.location.search);
     const addSpotId = urlParams.get('addSpot');
+    const editCourseId = urlParams.get('edit');
 
     // ===== DOM refs =====
     const listView = document.getElementById('cb-list-view');
@@ -73,6 +74,17 @@
     // ===== Init =====
     if (addSpotId) {
         _handleAddFromDetail(addSpotId);
+    } else if (editCourseId) {
+        const courseToEdit = _getCourse(editCourseId);
+        if (courseToEdit) {
+            _openCourse(editCourseId);
+        } else {
+            _renderCourseList();
+        }
+        // Clean URL
+        const cleanUrl = new URL(window.location);
+        cleanUrl.searchParams.delete('edit');
+        history.replaceState(null, '', cleanUrl.toString());
     } else {
         _renderCourseList();
     }

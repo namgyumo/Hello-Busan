@@ -296,5 +296,12 @@
   "cb_search_error": "検索エラー",
   "cb_added": "追加済み",
   "cb_add": "追加",
-  "btn_add_to_course": "コースに追加"
+  "btn_add_to_course": "コースに追加",
+  "tab_favorites": "お気に入り",
+  "tab_courses": "マイコース",
+  "courses_empty_text": "まだコースがありません",
+  "courses_create_new": "コース作成",
+  "course_select_title": "コースに追加",
+  "course_select_new": "新しいコースを作成",
+  "course_spot_added_to": "'{name}'に追加しました"
 }

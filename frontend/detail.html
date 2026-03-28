@@ -260,6 +260,20 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <!-- Course Selector Modal -->
+    <div class="course-select-modal" id="course-select-modal">
+        <div class="course-select-modal__backdrop" id="course-select-backdrop"></div>
+        <div class="course-select-modal__sheet">
+            <div class="course-select-modal__handle"></div>
+            <div class="course-select-modal__header">
+                <h3 class="course-select-modal__title" data-i18n="course_select_title">코스에 추가</h3>
+                <button class="course-select-modal__close" id="course-select-close" aria-label="닫기">&times;</button>
+            </div>
+            <div class="course-select-modal__body" id="course-select-body">
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/js/analytics.js"></script>
     <script src="/js/i18n.js"></script>

@@ -200,7 +200,7 @@ const ShareModal = (() => {
     }
 
     /**
-     * 카드 미리보기 생성
+     * 카드 미리보기 생성 (AI 스마트 카드 연동)
      */
     async function _generatePreview(type) {
         if (!_spot) return;
@@ -209,15 +209,22 @@ const ShareModal = (() => {
         if (!preview) return;
 
         // 로딩 표시
+        const loadingText = I18n.t('share_ai_selecting') || 'AI가 최적의 사진을 선택 중...';
         preview.innerHTML = `
             <div class="share-modal__card-loading">
                 <div class="share-modal__spinner"></div>
-                <span>${I18n.t('share_card_generating') || '카드 생성 중...'}</span>
+                <span class="share-modal__loading-text">${loadingText}</span>
             </div>
         `;
 
         try {
-            const blob = await ShareCard.generate(_spot, type || 'square');
+            // 상태 콜백: AI 처리 → 카드 생성 단계를 표시
+            const onStatus = (msg) => {
+                const el = preview.querySelector('.share-modal__loading-text');
+                if (el) el.textContent = msg;
+            };
+
+            const blob = await ShareCard.generate(_spot, type || 'square', onStatus);
             _previewBlob = blob;
 
             const url = URL.createObjectURL(blob);

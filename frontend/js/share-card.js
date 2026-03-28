@@ -23,13 +23,19 @@ const ShareCard = (() => {
 
     /**
      * 이미지를 캔버스에 cover 방식으로 그리기 (object-fit: cover)
+     * @param {number} focusX - 포커스 X 비율 (0.0~1.0), 기본 0.5 (중앙)
+     * @param {number} focusY - 포커스 Y 비율 (0.0~1.0), 기본 0.5 (중앙)
      */
-    function _drawCover(ctx, img, x, y, w, h) {
+    function _drawCover(ctx, img, x, y, w, h, focusX = 0.5, focusY = 0.5) {
         const ratio = Math.max(w / img.width, h / img.height);
         const sw = w / ratio;
         const sh = h / ratio;
-        const sx = (img.width - sw) / 2;
-        const sy = (img.height - sh) / 2;
+        // 포커스 포인트를 기준으로 크롭 영역 계산
+        let sx = img.width * focusX - sw / 2;
+        let sy = img.height * focusY - sh / 2;
+        // 경계를 벗어나지 않도록 클램핑
+        sx = Math.max(0, Math.min(img.width - sw, sx));
+        sy = Math.max(0, Math.min(img.height - sh, sy));
         ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
     }
 
@@ -72,11 +78,14 @@ const ShareCard = (() => {
 
     /**
      * 스토리 카드 생성 (1080 x 1920)
+     * @param {number} focusX - AI 추천 포커스 X (0.0~1.0)
+     * @param {number} focusY - AI 추천 포커스 Y (0.0~1.0)
+     * @param {string} caption - AI 생성 캡션
      */
-    async function _drawStoryCard(ctx, W, H, img, spot) {
+    async function _drawStoryCard(ctx, W, H, img, spot, focusX = 0.5, focusY = 0.5, caption = '') {
         // 1) 배경: 블러 처리된 이미지 + 어두운 오버레이
         ctx.filter = 'blur(30px) brightness(0.4)';
-        _drawCover(ctx, img, -40, -40, W + 80, H + 80);
+        _drawCover(ctx, img, -40, -40, W + 80, H + 80, focusX, focusY);
         ctx.filter = 'none';
 
         // 그라데이션 오버레이
@@ -111,7 +120,7 @@ const ShareCard = (() => {
         ctx.save();
         _roundRect(ctx, imgX, imgY, imgW, imgH, 24);
         ctx.clip();
-        _drawCover(ctx, img, imgX, imgY, imgW, imgH);
+        _drawCover(ctx, img, imgX, imgY, imgW, imgH, focusX, focusY);
         ctx.restore();
 
         // 이미지 위 카테고리 배지
@@ -143,8 +152,18 @@ const ShareCard = (() => {
             ctx.fillText(line, W / 2, infoY + i * 68);
         });
 
+        // AI 캡션 (있는 경우)
+        let captionOffset = 0;
+        if (caption) {
+            captionOffset = 48;
+            const captionY = infoY + nameLines.slice(0, 2).length * 68 + 8;
+            ctx.font = '34px Pretendard, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText(caption, W / 2, captionY);
+        }
+
         // 주소
-        const addrY = infoY + nameLines.slice(0, 2).length * 68 + 20;
+        const addrY = infoY + nameLines.slice(0, 2).length * 68 + 20 + captionOffset;
         if (spot.address) {
             ctx.font = '32px Pretendard, sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.75)';
@@ -188,11 +207,14 @@ const ShareCard = (() => {
 
     /**
      * 정사각형 카드 생성 (1080 x 1080)
+     * @param {number} focusX - AI 추천 포커스 X (0.0~1.0)
+     * @param {number} focusY - AI 추천 포커스 Y (0.0~1.0)
+     * @param {string} caption - AI 생성 캡션
      */
-    async function _drawSquareCard(ctx, W, H, img, spot) {
+    async function _drawSquareCard(ctx, W, H, img, spot, focusX = 0.5, focusY = 0.5, caption = '') {
         // 1) 배경: 블러 처리
         ctx.filter = 'blur(25px) brightness(0.35)';
-        _drawCover(ctx, img, -30, -30, W + 60, H + 60);
+        _drawCover(ctx, img, -30, -30, W + 60, H + 60, focusX, focusY);
         ctx.filter = 'none';
 
         // 오버레이
@@ -233,7 +255,7 @@ const ShareCard = (() => {
         ctx.save();
         _roundRect(ctx, imgX, imgY, imgW, imgH, 20);
         ctx.clip();
-        _drawCover(ctx, img, imgX, imgY, imgW, imgH);
+        _drawCover(ctx, img, imgX, imgY, imgW, imgH, focusX, focusY);
         ctx.restore();
 
         // 4) 하단 정보
@@ -247,8 +269,18 @@ const ShareCard = (() => {
             ctx.fillText(line, W / 2, infoY + i * 56);
         });
 
+        // AI 캡션 (있는 경우)
+        let captionOffset = 0;
+        if (caption) {
+            captionOffset = 40;
+            const captionY = infoY + nameLines.slice(0, 2).length * 56 + 4;
+            ctx.font = '28px Pretendard, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText(caption, W / 2, captionY);
+        }
+
         // 주소 (간략)
-        const addrY = infoY + nameLines.slice(0, 2).length * 56 + 16;
+        const addrY = infoY + nameLines.slice(0, 2).length * 56 + 16 + captionOffset;
         if (spot.address) {
             ctx.font = '28px Pretendard, sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -269,12 +301,43 @@ const ShareCard = (() => {
     }
 
     /**
+     * AI 스마트 카드 API 호출
+     * @param {Object} spot - 관광지 데이터
+     * @returns {Promise<{selected_image_index, focus_x, focus_y, caption}|null>}
+     */
+    async function _fetchSmartCard(spot) {
+        try {
+            const images = (spot.images && spot.images.length > 0) ? spot.images : [];
+            if (images.length === 0) return null;
+
+            const res = await fetch('/api/v1/share/smart-card', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    spot_id: spot.id || '',
+                    images: images,
+                    spot_name: spot.name || '',
+                    category: spot.category || '',
+                }),
+            });
+
+            if (!res.ok) return null;
+            const json = await res.json();
+            return json.data || null;
+        } catch (e) {
+            console.warn('스마트 카드 API 호출 실패:', e);
+            return null;
+        }
+    }
+
+    /**
      * 공유 카드 생성 메인 함수
      * @param {Object} spot - 관광지 데이터 { name, category, category_label, address, images, comfort }
      * @param {'story'|'square'} type - 카드 타입
+     * @param {Function} [onStatus] - 상태 콜백 (로딩 메시지 표시용)
      * @returns {Promise<Blob>} PNG 이미지 Blob
      */
-    async function generate(spot, type) {
+    async function generate(spot, type, onStatus) {
         const size = SIZES[type] || SIZES.square;
         const { w: W, h: H } = size;
 
@@ -297,12 +360,25 @@ const ShareCard = (() => {
             category_label: categoryLabels[spot.category] || spot.category || '',
         };
 
+        // AI 스마트 카드 API 호출
+        let smartCard = null;
+        if (spot.images && spot.images.length > 0) {
+            if (onStatus) onStatus(I18n.t('share_ai_selecting') || 'AI가 최적의 사진을 선택 중...');
+            smartCard = await _fetchSmartCard(spot);
+        }
+
+        const selectedIndex = smartCard ? smartCard.selected_image_index : 0;
+        const focusX = smartCard ? smartCard.focus_x : 0.5;
+        const focusY = smartCard ? smartCard.focus_y : 0.5;
+        const caption = smartCard ? (smartCard.caption || '') : '';
+
         // 이미지 로드
         let img;
         try {
             const imgSrc = (spot.images && spot.images.length > 0)
-                ? spot.images[0]
+                ? (spot.images[selectedIndex] || spot.images[0])
                 : '/images/og-home.png';
+            if (onStatus) onStatus(I18n.t('share_card_generating') || '카드 생성 중...');
             img = await _loadImage(imgSrc);
         } catch (e) {
             // 이미지 로드 실패 시 단색 배경으로 폴백
@@ -313,9 +389,9 @@ const ShareCard = (() => {
 
         if (img) {
             if (type === 'story') {
-                await _drawStoryCard(ctx, W, H, img, spotData);
+                await _drawStoryCard(ctx, W, H, img, spotData, focusX, focusY, caption);
             } else {
-                await _drawSquareCard(ctx, W, H, img, spotData);
+                await _drawSquareCard(ctx, W, H, img, spotData, focusX, focusY, caption);
             }
         } else {
             // 폴백: 단색 배경 + 텍스트
