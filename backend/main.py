@@ -296,6 +296,19 @@ def create_app() -> FastAPI:
             "comfort_recalculated": recalced,
         }
 
+    @app.post("/api/v1/admin/fill-images")
+    async def fill_missing_images(request: Request):
+        """이미지 없는 관광지만 TourAPI에서 이미지 보충 수집"""
+        _verify_admin(request)
+        from backend.collector.tourism import TourismCollector
+
+        tc = TourismCollector()
+        result = await tc.fill_missing_images()
+        await tc.close()
+        await cache.clear()
+
+        return result
+
     @app.post("/api/v1/admin/train-crowd")
     async def train_crowd_model(request: Request):
         """XGBoost 혼잡도 예측 모델 학습 트리거 (관리용)

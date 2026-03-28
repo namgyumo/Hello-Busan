@@ -269,3 +269,76 @@ class TourismCollector(BaseCollector):
             logger.error(f"nightview 시딩 실패: {e}")
 
         return updated
+
+    async def fill_missing_images(self) -> Dict:
+        """이미지 없는 관광지만 TourAPI에서 보충 수집"""
+        sb = get_supabase()
+
+        # 이미지 없는 관광지 조회
+        result = (
+            sb.table("tourist_spots")
+            .select("id, external_id, name, images")
+            .eq("is_active", True)
+            .execute()
+        )
+        all_spots = result.data or []
+        no_image = [
+            s for s in all_spots
+            if not s.get("images") or s["images"] == [] or s["images"] == [""]
+        ]
+
+        logger.info(f"이미지 없는 관광지: {len(no_image)}/{len(all_spots)}건")
+
+        updated = 0
+        skipped = 0
+        for spot in no_image:
+            ext_id = spot.get("external_id", "")
+            # TourAPI content_id는 숫자 (부산시 API external_id는 busan_ 접두어)
+            if not ext_id or not ext_id.isdigit():
+                skipped += 1
+                continue
+
+            try:
+                params = {
+                    "contentId": ext_id,
+                    "MobileOS": "ETC",
+                    "MobileApp": "HelloBusan",
+                    "imageYN": "Y",
+                    "subImageYN": "Y",
+                    "_type": "json",
+                }
+                body = await self.fetch("/detailImage2", params=params)
+                if not body:
+                    continue
+
+                items_wrapper = body.get("items", {})
+                if not isinstance(items_wrapper, dict):
+                    continue
+                items = items_wrapper.get("item", [])
+                if not isinstance(items, list):
+                    items = [items] if isinstance(items, dict) else []
+
+                images = []
+                for item in items:
+                    url = item.get("originimgurl") or item.get("smallimageurl") or ""
+                    if url:
+                        url = url.replace("http://", "https://")
+                        if url not in images:
+                            images.append(url)
+
+                if images:
+                    sb.table("tourist_spots").update(
+                        {"images": images}
+                    ).eq("id", spot["id"]).execute()
+                    updated += 1
+                    logger.info(f"이미지 보충: {spot['name']} ({len(images)}장)")
+
+            except Exception as e:
+                logger.warning(f"이미지 보충 실패 [{spot.get('name')}]: {e}")
+
+        logger.info(f"이미지 보충 완료: {updated}건 업데이트, {skipped}건 스킵 (비-TourAPI)")
+        return {
+            "total_no_image": len(no_image),
+            "updated": updated,
+            "skipped": skipped,
+        }
