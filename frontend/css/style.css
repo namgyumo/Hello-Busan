@@ -1828,7 +1828,7 @@ body.is-offline .header {
 .page-theme{padding-bottom:var(--bottom-nav-h)}
 
 /* Hero Banner */
-.theme-hero{position:relative;color:#fff;padding:2rem 1.5rem;min-height:180px;display:flex;align-items:flex-end;overflow:hidden;transition:background .5s ease}
+.theme-hero{position:relative;color:#fff;padding:2rem 1.5rem;min-height:180px;display:flex;align-items:flex-end;overflow:hidden;transition:background .5s ease;background:linear-gradient(135deg,#F8BBD0 0%,#F48FB1 50%,#EC407A 100%)}
 .theme-hero__content{position:relative;z-index:2;max-width:480px}
 .theme-hero__season-badge{display:inline-block;padding:.3rem .8rem;border-radius:var(--radius-full);background:rgba(255,255,255,.2);backdrop-filter:blur(8px);font-size:.8rem;font-weight:700;margin-bottom:.5rem;letter-spacing:.02em}
 .theme-hero__title{font-size:1.6rem;font-weight:800;line-height:1.3;margin-bottom:.3rem;text-shadow:0 2px 8px rgba(0,0,0,.18)}

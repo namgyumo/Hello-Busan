@@ -30,7 +30,7 @@ class CrowdTrendService:
         return int(max(0, min(100, 100 - crowd_ratio)))
 
     def _get_category(self, spot_id: str) -> Optional[str]:
-        """관광지 카테고리 조회"""
+        """관광지 카테고리 조회 (실패 시 'nature' 폴백)"""
         try:
             sb = get_supabase()
             result = (
@@ -45,25 +45,10 @@ class CrowdTrendService:
             return None
         except Exception as e:
             logger.error(f"카테고리 조회 실패 [{spot_id}]: {e}")
-            return None
+            return "nature"
 
-    def get_hourly_trend(self, spot_id: str) -> Optional[Dict]:
-        """시간대별(0~23시) 혼잡도 트렌드 반환
-
-        Returns:
-            {
-                "spot_id": str,
-                "hours": [{"hour": 0, "crowd_score": 95, "level": "여유"}, ...],
-                "best_times": [{"hour": 5, "crowd_score": 98}, ...],  # TOP 3 한산한 시간
-                "current_hour": int,
-                "current_score": int,
-                "current_level": str,
-            }
-        """
-        category = self._get_category(spot_id)
-        if category is None:
-            return None
-
+    def _build_hourly_trend(self, spot_id: str, category: str) -> Dict:
+        """카테고리 기반 시간대별 혼잡도 트렌드 계산"""
         now = datetime.now()
         weekday = now.weekday()
         month = now.month
@@ -100,7 +85,6 @@ class CrowdTrendService:
                 "level": level,
             })
 
-        # best_times: 가장 한산한 시간대 TOP 3
         sorted_hours = sorted(hours, key=lambda h: h["crowd_score"], reverse=True)
         best_times = [{"hour": h["hour"], "crowd_score": h["crowd_score"]} for h in sorted_hours[:3]]
 
@@ -115,21 +99,8 @@ class CrowdTrendService:
             "current_level": current_entry["level"],
         }
 
-    def get_weekly_pattern(self, spot_id: str) -> Optional[Dict]:
-        """요일별(월~일) 평균 혼잡도 패턴 반환
-
-        Returns:
-            {
-                "spot_id": str,
-                "days": [{"day": 0, "day_name": "월", "avg_score": 75}, ...],
-                "best_day": {"day": 0, "day_name": "월", "avg_score": 75},
-                "today": int,
-            }
-        """
-        category = self._get_category(spot_id)
-        if category is None:
-            return None
-
+    def _build_weekly_pattern(self, spot_id: str, category: str) -> Dict:
+        """카테고리 기반 요일별 혼잡도 패턴 계산"""
         now = datetime.now()
         month = now.month
         today = now.weekday()
@@ -144,7 +115,6 @@ class CrowdTrendService:
         for weekday in range(7):
             day_mult = DAY_MULTIPLIER.get(weekday, 1.0)
 
-            # 하루 평균: 주요 활동 시간대(8~22시) 평균 혼잡도
             total_score = 0
             count = 0
             for hour in range(8, 22):
@@ -166,7 +136,6 @@ class CrowdTrendService:
                 "avg_score": avg_score,
             })
 
-        # best_day: 가장 한산한 요일
         best = max(days, key=lambda d: d["avg_score"])
 
         return {
@@ -179,3 +148,25 @@ class CrowdTrendService:
             },
             "today": today,
         }
+
+    def get_hourly_trend(self, spot_id: str) -> Optional[Dict]:
+        """시간대별(0~23시) 혼잡도 트렌드 반환"""
+        category = self._get_category(spot_id)
+        if category is None:
+            return None
+        return self._build_hourly_trend(spot_id, category)
+
+    def get_hourly_trend_fallback(self, spot_id: str) -> Dict:
+        """시간대별 혼잡도 트렌드 폴백 (DB 조회 실패 시 기본 카테고리 사용)"""
+        return self._build_hourly_trend(spot_id, "nature")
+
+    def get_weekly_pattern(self, spot_id: str) -> Optional[Dict]:
+        """요일별(월~일) 평균 혼잡도 패턴 반환"""
+        category = self._get_category(spot_id)
+        if category is None:
+            return None
+        return self._build_weekly_pattern(spot_id, category)
+
+    def get_weekly_pattern_fallback(self, spot_id: str) -> Dict:
+        """요일별 혼잡도 패턴 폴백 (DB 조회 실패 시 기본 카테고리 사용)"""
+        return self._build_weekly_pattern(spot_id, "nature")

@@ -109,10 +109,9 @@
             courseListEl.innerHTML = `
                 <div class="cb-empty">
                     <div class="cb-empty__icon">&#x1F5FA;</div>
-                    <div class="cb-empty__text" data-i18n="cb_empty_text">아직 만든 코스가 없습니다.<br>새 코스를 만들어보세요!</div>
+                    <div class="cb-empty__text">${_escapeHtml(I18n.t('cb_empty_text')).replace(/\n/g, '<br>')}</div>
                 </div>
             `;
-            I18n.applyTo(courseListEl);
             return;
         }
 

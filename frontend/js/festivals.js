@@ -100,35 +100,42 @@
                 limit: '50',
                 offset: '0',
             });
-            if (currentFilter !== 'all') {
-                params.set('status', currentFilter);
+            if (currentFilter === 'ongoing') {
+                params.set('ongoing', 'true');
             }
 
-            var res = await fetch(API_BASE + '/events/festivals?' + params);
+            var res = await fetch(API_BASE + '/festivals?' + params);
             if (!res.ok) {
                 throw new Error('HTTP ' + res.status);
             }
             var json = await res.json();
 
-            if (!json.success || !Array.isArray(json.data) || json.data.length === 0) {
+            var items = (json.success && Array.isArray(json.data)) ? json.data : [];
+
+            // Client-side status filter for upcoming/ended (backend only supports ongoing)
+            if (currentFilter === 'upcoming' || currentFilter === 'ended') {
+                items = items.filter(function (f) { return f.status === currentFilter; });
+            }
+
+            if (items.length === 0) {
                 listEl.innerHTML = '';
                 if (emptyEl) emptyEl.style.display = '';
                 return;
             }
 
             listEl.innerHTML = '';
-            json.data.forEach(function (festival, idx) {
+            items.forEach(function (festival, idx) {
                 var card = document.createElement('div');
                 card.className = 'festival-card';
                 card.style.animationDelay = (idx * 0.08) + 's';
 
-                var safeName = _escapeHtml(festival.title);
-                var safePlace = _escapeHtml(festival.event_place || festival.address || '');
-                var thumb = festival.thumbnail || '';
+                var safeName = _escapeHtml(festival.name);
+                var safePlace = _escapeHtml(festival.location || festival.address || '');
+                var thumb = (festival.images && festival.images.length > 0) ? festival.images[0] : '';
                 var statusClass = 'festival-status--' + (festival.status || 'unknown');
                 var statusText = _statusLabel(festival.status);
 
-                var dateRange = _formatDateRange(festival.event_start_date, festival.event_end_date);
+                var dateRange = _formatDateRange(festival.start_date, festival.end_date);
 
                 var imgHtml = thumb
                     ? '<img src="' + _escapeHtml(thumb) + '" alt="' + safeName + '" class="festival-card__img" loading="lazy">'
@@ -169,13 +176,10 @@
     function openFestivalModal(festival) {
         if (!modal || !modalBody) return;
 
-        var safeName = _escapeHtml(festival.title);
+        var safeName = _escapeHtml(festival.name);
         var safeDesc = _escapeHtml(festival.description || '').replace(/\n/g, '<br>');
-        var safePlace = _escapeHtml(festival.event_place || festival.address || '');
-        var safePhone = _escapeHtml(festival.phone || '');
-        var safeUseTime = _escapeHtml(festival.use_time || '');
-        var safeSponsor = _escapeHtml(festival.sponsor || '');
-        var dateRange = _formatDateRange(festival.event_start_date, festival.event_end_date);
+        var safePlace = _escapeHtml(festival.location || festival.address || '');
+        var dateRange = _formatDateRange(festival.start_date, festival.end_date);
         var statusClass = 'festival-status--' + (festival.status || 'unknown');
         var statusText = _statusLabel(festival.status);
 
@@ -192,9 +196,6 @@
             '<div class="festival-modal__info">' +
                 '<p>&#x1F4C5; ' + _escapeHtml(dateRange) + '</p>' +
                 (safePlace ? '<p>&#x1F4CD; ' + safePlace + '</p>' : '') +
-                (safePhone ? '<p>&#x1F4DE; ' + safePhone + '</p>' : '') +
-                (safeUseTime ? '<p>&#x1F553; ' + safeUseTime + '</p>' : '') +
-                (safeSponsor ? '<p>&#x1F3E2; ' + safeSponsor + '</p>' : '') +
             '</div>';
 
         if (safeDesc) {

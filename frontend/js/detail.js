@@ -598,33 +598,38 @@
         if (!section) return;
 
         try {
-            // 시간대별 트렌드 + 요일별 패턴 병렬 로드
-            var [trendRes, weeklyRes] = await Promise.all([
-                fetch('/api/v1/crowd/' + encodeURIComponent(id) + '/trend'),
-                fetch('/api/v1/crowd/' + encodeURIComponent(id) + '/weekly'),
+            // 시간대별 트렌드 + 요일별 패턴 병렬 로드 (개별 실패 허용)
+            var [trendResult, weeklyResult] = await Promise.all([
+                fetch('/api/v1/crowd/' + encodeURIComponent(id) + '/trend')
+                    .then(function(r) { return r.json(); })
+                    .catch(function() { return null; }),
+                fetch('/api/v1/crowd/' + encodeURIComponent(id) + '/weekly')
+                    .then(function(r) { return r.json(); })
+                    .catch(function() { return null; }),
             ]);
 
-            var trendJson = await trendRes.json();
-            var weeklyJson = await weeklyRes.json();
+            var trendJson = trendResult;
+            var weeklyJson = weeklyResult;
 
-            if (!trendJson.success || !trendJson.data) return;
+            // 트렌드 데이터가 있으면 섹션 표시
+            if (trendJson && trendJson.success && trendJson.data) {
+                section.style.display = '';
+                var trend = trendJson.data;
 
-            section.style.display = '';
-            var trend = trendJson.data;
+                // 실시간 배지
+                _renderCrowdBadge(trend);
 
-            // 실시간 배지
-            _renderCrowdBadge(trend);
+                // 시간대별 막대 그래프
+                _renderHourlyChart(trend);
 
-            // 시간대별 막대 그래프
-            _renderHourlyChart(trend);
+                // 베스트 타임
+                _renderBestTimes(trend);
 
-            // 베스트 타임
-            _renderBestTimes(trend);
-
-            // 요일별 히트맵
-            if (weeklyJson.success && weeklyJson.data) {
-                _renderWeeklyHeatmap(weeklyJson.data);
-                _renderBestDay(weeklyJson.data);
+                // 요일별 히트맵
+                if (weeklyJson && weeklyJson.success && weeklyJson.data) {
+                    _renderWeeklyHeatmap(weeklyJson.data);
+                    _renderBestDay(weeklyJson.data);
+                }
             }
         } catch (e) {
             console.warn('혼잡도 트렌드 로드 실패:', e);

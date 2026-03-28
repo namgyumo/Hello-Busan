@@ -26,17 +26,21 @@ async def get_crowd_trend(spot_id: str):
     try:
         result = trend_service.get_hourly_trend(spot_id)
         if not result:
-            raise HTTPException(status_code=404, detail="관광지를 찾을 수 없습니다")
+            # 관광지를 찾을 수 없어도 기본 카테고리로 폴백 트렌드 제공
+            result = trend_service.get_hourly_trend_fallback(spot_id)
 
         response = SuccessResponse(data=result)
         await cache.set(cache_key, response.model_dump(), ttl=300)
         return response
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"혼잡도 트렌드 조회 실패 [{spot_id}]: {e}")
-        raise HTTPException(status_code=500, detail="혼잡도 트렌드 조회 중 오류 발생")
+        # 에러 시에도 폴백 트렌드 반환 (프론트엔드 표시 보장)
+        try:
+            fallback = trend_service.get_hourly_trend_fallback(spot_id)
+            return SuccessResponse(data=fallback)
+        except Exception:
+            raise HTTPException(status_code=500, detail="혼잡도 트렌드 조회 중 오류 발생")
 
 
 @router.get("/{spot_id}/weekly")
@@ -50,14 +54,18 @@ async def get_crowd_weekly(spot_id: str):
     try:
         result = trend_service.get_weekly_pattern(spot_id)
         if not result:
-            raise HTTPException(status_code=404, detail="관광지를 찾을 수 없습니다")
+            # 관광지를 찾을 수 없어도 기본 카테고리로 폴백 패턴 제공
+            result = trend_service.get_weekly_pattern_fallback(spot_id)
 
         response = SuccessResponse(data=result)
         await cache.set(cache_key, response.model_dump(), ttl=300)
         return response
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"요일별 혼잡도 조회 실패 [{spot_id}]: {e}")
-        raise HTTPException(status_code=500, detail="요일별 혼잡도 조회 중 오류 발생")
+        # 에러 시에도 폴백 패턴 반환
+        try:
+            fallback = trend_service.get_weekly_pattern_fallback(spot_id)
+            return SuccessResponse(data=fallback)
+        except Exception:
+            raise HTTPException(status_code=500, detail="요일별 혼잡도 조회 중 오류 발생")

@@ -96,6 +96,10 @@
 
         } catch (e) {
             console.warn('테마 로드 실패:', e);
+            var seasonContainer = document.getElementById('theme-season-list');
+            if (seasonContainer) seasonContainer.innerHTML = '<p class="theme-empty">테마를 불러올 수 없습니다</p>';
+            var allContainer = document.getElementById('theme-all-list');
+            if (allContainer) allContainer.innerHTML = '<p class="theme-empty">테마를 불러올 수 없습니다</p>';
         }
     }
 
@@ -305,6 +309,7 @@
 
         } catch (e) {
             console.warn('테마 상세 로드 실패:', e);
+            if (spotsContainer) spotsContainer.innerHTML = '<p class="theme-empty">관광지 정보를 불러올 수 없습니다</p>';
         }
     }
 
