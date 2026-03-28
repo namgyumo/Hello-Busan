@@ -588,7 +588,7 @@
 
     function initHeroSlider() {
         var slides = document.querySelectorAll('.hero-slider__slide');
-        var dots = document.querySelectorAll('.hero-slider__dot');
+        var dotsContainer = document.getElementById('hero-slider-dots');
         var prevBtn = document.getElementById('hero-slider-prev');
         var nextBtn = document.getElementById('hero-slider-next');
         var slider = document.getElementById('hero-slider');
@@ -599,17 +599,37 @@
         var interval = null;
         var INTERVAL_MS = 5000;
 
+        // 슬라이드 수에 맞춰 dot 동적 생성
+        var dots = [];
+        if (dotsContainer) {
+            dotsContainer.innerHTML = '';
+            for (var i = 0; i < total; i++) {
+                var dot = document.createElement('button');
+                dot.className = 'hero-slider__dot' + (i === 0 ? ' hero-slider__dot--active' : '');
+                dot.setAttribute('role', 'tab');
+                dot.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+                dot.setAttribute('aria-label', 'Slide ' + (i + 1));
+                dot.setAttribute('data-slide', String(i));
+                dotsContainer.appendChild(dot);
+                dots.push(dot);
+            }
+        }
+
         // Apply i18n alt texts on init
         _applySliderAltTexts();
 
         function goTo(idx) {
             slides[current].classList.remove('hero-slider__slide--active');
-            dots[current].classList.remove('hero-slider__dot--active');
-            dots[current].setAttribute('aria-selected', 'false');
+            if (dots[current]) {
+                dots[current].classList.remove('hero-slider__dot--active');
+                dots[current].setAttribute('aria-selected', 'false');
+            }
             current = ((idx % total) + total) % total;
             slides[current].classList.add('hero-slider__slide--active');
-            dots[current].classList.add('hero-slider__dot--active');
-            dots[current].setAttribute('aria-selected', 'true');
+            if (dots[current]) {
+                dots[current].classList.add('hero-slider__dot--active');
+                dots[current].setAttribute('aria-selected', 'true');
+            }
         }
 
         function next() { goTo(current + 1); }

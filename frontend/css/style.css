@@ -320,9 +320,9 @@ body{animation:pageIn 350ms ease-out}
 .hero-slider__arrow--next{right:6px}
 
 /* Slider Dots */
-.hero-slider__dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:4;display:flex;gap:7px}
-.hero-slider__dot{width:8px;height:8px;border-radius:50%;border:2px solid rgba(255,255,255,.55);background:transparent;cursor:pointer;padding:0;transition:background .3s,border-color .3s,transform .3s,width .3s}
-.hero-slider__dot--active{background:#fff;border-color:#fff;transform:scale(1.15);width:20px;border-radius:10px}
+.hero-slider__dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:4;display:flex;gap:5px}
+.hero-slider__dot{width:6px;height:6px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);background:transparent;cursor:pointer;padding:0;transition:background .3s,border-color .3s,transform .3s,width .3s}
+.hero-slider__dot--active{background:#fff;border-color:#fff;transform:scale(1.2);width:16px;border-radius:8px}
 .hero-slider__dot:hover{border-color:#fff}
 
 @media(prefers-reduced-motion:reduce){
