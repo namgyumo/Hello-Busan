@@ -16,6 +16,7 @@ services:
       - ./ml_data:/app/ml_data
       - ./frontend:/app/frontend
       - ./logs:/app/logs
+      - ./Dataset:/app/Dataset
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
@@ -26,9 +27,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 4096M
         reservations:
-          memory: 1024M
+          memory: 2048M
     logging:
       driver: "json-file"
       options:

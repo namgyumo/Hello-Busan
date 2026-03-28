@@ -1,6 +1,6 @@
 {
-  "mae": 0.1368,
-  "r2": 0.9996,
+  "mae": 0.1082,
+  "r2": 0.9997,
   "train_size": 2272665,
   "test_size": 568167,
   "features": [
@@ -11,7 +11,21 @@
     "station_id",
     "alighting_count",
     "boarding_count",
-    "population_flow"
+    "population_flow",
+    "living_pop",
+    "working_pop",
+    "visiting_pop",
+    "sales_amount",
+    "sales_count",
+    "avg_temp",
+    "min_temp",
+    "max_temp",
+    "rainfall",
+    "gu_visitors",
+    "gu_visitor_ratio",
+    "daily_total_visitors",
+    "daily_tourist_ratio",
+    "dong_move_count"
   ],
   "total_stations": 111
 }
